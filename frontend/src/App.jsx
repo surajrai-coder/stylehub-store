@@ -47,7 +47,7 @@ function App() {
   const [orderSummary, setOrderSummary] = useState(null);
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const [completedOrder, setCompletedOrder] = useState(null);
-  const [showQrCode, setShowQrCode] = useState(false); // Controlled QR view state
+  const [showQrCode, setShowQrCode] = useState(false);
 
   // Card / Net Banking Simulation Inputs
   const [cardNumber, setCardNumber] = useState('');
@@ -56,7 +56,8 @@ function App() {
   const [selectedBank, setSelectedBank] = useState('UCO Bank');
   const [isProcessingPay, setIsProcessingPay] = useState(false);
 
-  // Verified Business Details
+  // Live Production Backend URL & Business Config
+  const API_BASE_URL = "https://stylehub-store.onrender.com";
   const STORE_NAME = "My Style Hub";
   const UPI_ID = "ksuraj07501@okaxis"; 
   const ACCOUNT_HOLDER = "Suraj Kumar";
@@ -67,13 +68,13 @@ function App() {
   const OWNER_NAME = "Suraj Rai";
 
   const fetchProducts = () => {
-    axios.get('http://localhost:5000/api/products')
+    axios.get(`${API_BASE_URL}/api/products`)
       .then((res) => setProducts(res.data))
       .catch((err) => console.error("Error fetching products:", err));
   };
 
   const fetchOrders = () => {
-    axios.get('http://localhost:5000/api/orders')
+    axios.get(`${API_BASE_URL}/api/orders`)
       .then((res) => setOrders(res.data))
       .catch((err) => console.error("Error fetching orders:", err));
   };
@@ -150,7 +151,7 @@ function App() {
 
   const handleRegister = (e) => {
     e.preventDefault();
-    axios.post('http://localhost:5000/api/auth/register', {
+    axios.post(`${API_BASE_URL}/api/auth/register`, {
       name: authName,
       email: authEmail,
       phone: authPhone,
@@ -171,7 +172,7 @@ function App() {
 
   const handleLogin = (e) => {
     e.preventDefault();
-    axios.post('http://localhost:5000/api/auth/login', {
+    axios.post(`${API_BASE_URL}/api/auth/login`, {
       email: authEmail,
       password: authPassword
     })
@@ -215,7 +216,7 @@ function App() {
       alert("Title, Price aur Category select karna zaroori hai!");
       return;
     }
-    axios.post('http://localhost:5000/api/products', {
+    axios.post(`${API_BASE_URL}/api/products`, {
       name,
       price: Number(price),
       category: category,
@@ -236,19 +237,19 @@ function App() {
 
   const handleDeleteProduct = (id) => {
     if (window.confirm("Delete this outfit?")) {
-      axios.delete(`http://localhost:5000/api/products/${id}`)
+      axios.delete(`${API_BASE_URL}/api/products/${id}`)
         .then(() => fetchProducts());
     }
   };
 
   const handleStatusChange = (orderId, newStatus) => {
-    axios.put(`http://localhost:5000/api/orders/${orderId}`, { status: newStatus })
+    axios.put(`${API_BASE_URL}/api/orders/${orderId}`, { status: newStatus })
       .then(() => fetchOrders());
   };
 
   const handleDeleteOrder = (orderId) => {
     if (window.confirm("Delete order?")) {
-      axios.delete(`http://localhost:5000/api/orders/${orderId}`).then(() => fetchOrders());
+      axios.delete(`${API_BASE_URL}/api/orders/${orderId}`).then(() => fetchOrders());
     }
   };
 
@@ -276,12 +277,11 @@ function App() {
       discount: discountAmount,
       totalAmount: finalPayablePrice
     });
-    setShowQrCode(false); // Reset QR toggle on modal open
+    setShowQrCode(false);
     setIsCartOpen(false);
     setShowPaymentGateway(true);
   };
 
-  // Immediate Order Placement upon payment confirmation
   const finalizeOrder = (methodUsed) => {
     setIsProcessingPay(true);
     setTimeout(() => {
@@ -291,7 +291,7 @@ function App() {
         utrNumber: `ONLINE-TXN-${Math.floor(100000 + Math.random() * 900000)}`
       };
 
-      axios.post('http://localhost:5000/api/orders', orderData)
+      axios.post(`${API_BASE_URL}/api/orders`, orderData)
       .then((res) => {
         setIsProcessingPay(false);
         alert(`Payment Successful! Order Placed Successfully.`);
@@ -663,7 +663,7 @@ function App() {
                             
                             <div style={{ marginBottom: '14px' }}>
                               <span style={{ fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Select Size:</span>
-                              <div style={{ display: 'flex', gap: '7px', marginTop: '8px' }}>
+                              <div style={{ display: 'flex', gap: '7px', marginTop: '6px' }}>
                                 {['S', 'M', 'L', 'XL', 'XXL'].map((sz) => (
                                   <button
                                     key={sz}
@@ -1217,7 +1217,7 @@ function App() {
         </div>
       )}
 
-      {/* RAZORPAY-STYLE MULTI-PAYMENT GATEWAY MODAL (WITH ON-CLICK QR & INSTANT ORDER) */}
+      {/* RAZORPAY-STYLE MULTI-PAYMENT GATEWAY MODAL */}
       {showPaymentGateway && orderSummary && (
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(15,23,42,0.75)', backdropFilter: 'blur(8px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1200 }}>
           <div style={{ background: '#fff', width: '92%', maxWidth: '620px', borderRadius: '24px', overflow: 'hidden', boxShadow: '0 25px 60px rgba(0,0,0,0.3)', display: 'flex', flexDirection: 'column' }}>
@@ -1262,7 +1262,7 @@ function App() {
               {/* Screens */}
               <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                 
-                {/* 1. UPI TAB (ON-CLICK QR & INSTANT ORDER) */}
+                {/* 1. UPI TAB */}
                 {paymentTab === 'upi' && (
                   <div style={{ textAlign: 'center' }}>
                     <div style={{ fontSize: '14px', fontWeight: '800', color: '#0f172a', marginBottom: '4px' }}>Pay directly to {ACCOUNT_HOLDER}</div>
