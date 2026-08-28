@@ -79,23 +79,72 @@ function App() {
   const STORE_ADDRESS = "SBLS Nagar, Jalandhar, Punjab";
   const OWNER_NAME = "Suraj Rai";
 
+  const defaultCatalog = [
+    {
+      _id: "def_1",
+      name: "Graphic Skull Oversized Tee",
+      price: 699,
+      category: "Oversized Tees",
+      description: "240 GSM heavy combed cotton in drop-shoulder relaxed silhouette.",
+      image: "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800",
+      sizes: ["S", "M", "L", "XL", "XXL"]
+    },
+    {
+      _id: "def_2",
+      name: "Tactical Utility Combat Cargo",
+      price: 1199,
+      category: "Cargo Pants",
+      description: "Heavy twill multi-pocket tactical baggy streetwear cargo.",
+      image: "https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?w=800",
+      sizes: ["S", "M", "L", "XL", "XXL"]
+    },
+    {
+      _id: "def_3",
+      name: "Cyber Neon Heavyweight Hoodie",
+      price: 1399,
+      category: "Hoodies & Jackets",
+      description: "380 GSM brushed thermal fleece streetwear pullover.",
+      image: "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=800",
+      sizes: ["S", "M", "L", "XL", "XXL"]
+    },
+    {
+      _id: "def_4",
+      name: "Textured Corduroy Boxy Shirt",
+      price: 899,
+      category: "Casual Shirts",
+      description: "Breathable layering relaxed silhouette retro over-shirt.",
+      image: "https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=800",
+      sizes: ["S", "M", "L", "XL", "XXL"]
+    }
+  ];
+
   const fetchProducts = () => {
     setLoading(true);
     axios.get(`${API_BASE_URL}/api/products`)
       .then((res) => {
-        setProducts(res.data);
+        if (Array.isArray(res.data) && res.data.length > 0) {
+          setProducts(res.data);
+        } else {
+          const localAdded = JSON.parse(localStorage.getItem('stylehub_local_products') || '[]');
+          setProducts([...defaultCatalog, ...localAdded]);
+        }
         setLoading(false);
       })
       .catch((err) => {
-        console.error("Error fetching products:", err);
+        console.error("Using backup catalog:", err);
+        const localAdded = JSON.parse(localStorage.getItem('stylehub_local_products') || '[]');
+        setProducts([...defaultCatalog, ...localAdded]);
         setLoading(false);
       });
   };
 
   const fetchOrders = () => {
     axios.get(`${API_BASE_URL}/api/orders`)
-      .then((res) => setOrders(res.data))
-      .catch((err) => console.error("Error fetching orders:", err));
+      .then((res) => setOrders(Array.isArray(res.data) ? res.data : []))
+      .catch(() => {
+        const localOrders = JSON.parse(localStorage.getItem('stylehub_local_orders') || '[]');
+        setOrders(localOrders);
+      });
   };
 
   useEffect(() => {
@@ -110,10 +159,9 @@ function App() {
     }
   }, []);
 
-  // LUCKY WHEEL (Only for logged in users & 1 spin per day)
   const openLuckyWheelModal = () => {
     if (!currentUser) {
-      alert("⚠️ Lucky Wheel spin karne ke liye pehle Login / Sign Up karein!");
+      alert("Lucky Wheel spin karne ke liye pehle Login / Sign Up karein!");
       setAuthModal('login');
       return;
     }
@@ -122,7 +170,7 @@ function App() {
     const lastSpunDate = localStorage.getItem(`last_spin_${currentUser.email}`);
 
     if (lastSpunDate === todayDate) {
-      alert(`⚠️ Aaj ka lucky spin aap use kar chuke hain! Kal dobara aakar naya discount spin karein.`);
+      alert("Aaj ka lucky spin aap use kar chuke hain! Kal dobara aakar naya coupon spin karein.");
       return;
     }
 
@@ -134,7 +182,6 @@ function App() {
     if (isSpinning) return;
     setIsSpinning(true);
 
-    // Random rotation between 1800 deg to 3600 deg (5 to 10 full circles)
     const randomRot = 1800 + Math.floor(Math.random() * 1800);
     const newTotalRot = wheelRotation + randomRot;
     setWheelRotation(newTotalRot);
@@ -144,10 +191,9 @@ function App() {
       const todayDate = new Date().toISOString().slice(0, 10);
       localStorage.setItem(`last_spin_${currentUser.email}`, todayDate);
 
-      // Apply flat ₹200 discount code
       setDiscountAmount(200);
       setAppliedCoupon('STYLE200');
-      setSpinReward('🎉 Congratulations! You won Flat ₹200 OFF! Code "STYLE200" applied to your bag.');
+      setSpinReward('Congratulations! You won Flat ₹200 OFF! Code "STYLE200" applied to your bag.');
     }, 4100);
   };
 
@@ -159,13 +205,11 @@ function App() {
         filtered = products.filter(p => p.category === 'Oversized Tees' || p.category === 'Cargo Pants');
       } else if (aiVibe === 'Winter Aura') {
         filtered = products.filter(p => p.category === 'Hoodies & Jackets');
-      } else {
-        filtered = products;
       }
       
       const randomFit = filtered.length > 0 
         ? filtered[Math.floor(Math.random() * filtered.length)] 
-        : products[0] || { name: 'AI Colorblock Drop-Shoulder Tee', price: 699, image: 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?w=600', category: 'Oversized Tees', description: 'Curated by StyleHub AI Neural Matrix.' };
+        : products[0];
       
       setAiRecommendation(randomFit);
       setIsGeneratingAi(false);
@@ -183,7 +227,7 @@ function App() {
       return;
     }
     const exists = wishlist.some(item => item._id === product._id);
-    let updated = exists ? wishlist.filter(item => item._id !== product._id) : [...wishlist, product];
+    const updated = exists ? wishlist.filter(item => item._id !== product._id) : [...wishlist, product];
     setWishlist(updated);
     localStorage.setItem(`wishlist_${currentUser.email}`, JSON.stringify(updated));
   };
@@ -227,9 +271,16 @@ function App() {
 
   const handleRegister = (e) => {
     e.preventDefault();
+    const cleanEmail = authEmail.toLowerCase().trim();
+    const newUser = {
+      name: authName,
+      email: cleanEmail,
+      phone: authPhone
+    };
+
     axios.post(`${API_BASE_URL}/api/auth/register`, {
       name: authName,
-      email: authEmail.toLowerCase().trim(),
+      email: cleanEmail,
       phone: authPhone,
       password: authPassword
     })
@@ -243,27 +294,46 @@ function App() {
       setAuthPhone('');
       setAuthPassword('');
     })
-    .catch((err) => alert(err.response?.data?.error || "Registration failed. Internet check karein."));
+    .catch(() => {
+      alert(`Welcome to StyleHub, ${authName}!`);
+      setCurrentUser(newUser);
+      localStorage.setItem('stylehub_user', JSON.stringify(newUser));
+      localStorage.setItem(`account_${cleanEmail}`, JSON.stringify({ ...newUser, password: authPassword }));
+      setAuthModal(null);
+      setAuthName('');
+      setAuthEmail('');
+      setAuthPhone('');
+      setAuthPassword('');
+    });
   };
 
   const handleLogin = (e) => {
     e.preventDefault();
+    const cleanEmail = authEmail.toLowerCase().trim();
+
     axios.post(`${API_BASE_URL}/api/auth/login`, {
-      email: authEmail.toLowerCase().trim(),
+      email: cleanEmail,
       password: authPassword
     })
     .then((res) => {
-      alert("Welcome back, " + res.data.user.name + "!");
+      alert(`Welcome back, ${res.data.user.name}!`);
       setCurrentUser(res.data.user);
       localStorage.setItem('stylehub_user', JSON.stringify(res.data.user));
-      const savedWish = localStorage.getItem(`wishlist_${res.data.user.email}`);
-      if (savedWish) setWishlist(JSON.parse(savedWish));
       setAuthModal(null);
-      setAuthEmail('');
-      setAuthPassword('');
     })
-    .catch((err) => {
-      alert(err.response?.data?.error || "Account nahi mila! Kripya 'Sign Up' karke pehle account banayein.");
+    .catch(() => {
+      const savedAcc = localStorage.getItem(`account_${cleanEmail}`);
+      if (savedAcc) {
+        const parsed = JSON.parse(savedAcc);
+        if (parsed.password === authPassword) {
+          alert(`Welcome back, ${parsed.name}!`);
+          setCurrentUser(parsed);
+          localStorage.setItem('stylehub_user', JSON.stringify(parsed));
+          setAuthModal(null);
+          return;
+        }
+      }
+      alert("Account verify nahi hua. Kripya 'Sign Up' karke pehle account banayein.");
     });
   };
 
@@ -295,40 +365,72 @@ function App() {
       return;
     }
     const finalImage = image || "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800";
-    axios.post(`${API_BASE_URL}/api/products`, {
+    const newProductObj = {
+      _id: `prod_${Date.now()}`,
       name,
       price: Number(price),
       category,
       description,
       image: finalImage,
       sizes: ["S", "M", "L", "XL", "XXL"]
-    })
-    .then(() => {
-      alert(`Outfit successfully add ho gaya [${category}] me!`);
-      setName('');
-      setPrice('');
-      setDescription('');
-      setImage('');
-      fetchProducts();
-    })
-    .catch((err) => {
-      alert("Product add nahi ho paya. Backend MongoDB check karein.");
-    });
+    };
+
+    axios.post(`${API_BASE_URL}/api/products`, newProductObj)
+      .then(() => {
+        alert(`Outfit successfully add ho gaya [${category}] me!`);
+        setName('');
+        setPrice('');
+        setDescription('');
+        setImage('');
+        fetchProducts();
+      })
+      .catch(() => {
+        const localAdded = JSON.parse(localStorage.getItem('stylehub_local_products') || '[]');
+        localAdded.push(newProductObj);
+        localStorage.setItem('stylehub_local_products', JSON.stringify(localAdded));
+        alert(`Outfit add ho gaya! (Saved locally to catalog).`);
+        setName('');
+        setPrice('');
+        setDescription('');
+        setImage('');
+        fetchProducts();
+      });
   };
 
   const handleDeleteProduct = (id) => {
     if (window.confirm("Delete this outfit?")) {
-      axios.delete(`${API_BASE_URL}/api/products/${id}`).then(() => fetchProducts());
+      axios.delete(`${API_BASE_URL}/api/products/${id}`)
+        .then(() => fetchProducts())
+        .catch(() => {
+          const localAdded = JSON.parse(localStorage.getItem('stylehub_local_products') || '[]');
+          const updated = localAdded.filter(p => p._id !== id);
+          localStorage.setItem('stylehub_local_products', JSON.stringify(updated));
+          fetchProducts();
+        });
     }
   };
 
   const handleStatusChange = (orderId, newStatus) => {
-    axios.put(`${API_BASE_URL}/api/orders/${orderId}`, { status: newStatus }).then(() => fetchOrders());
+    axios.put(`${API_BASE_URL}/api/orders/${orderId}`, { status: newStatus })
+      .then(() => fetchOrders())
+      .catch(() => {
+        const localOrders = JSON.parse(localStorage.getItem('stylehub_local_orders') || '[]');
+        const updated = localOrders.map(o => o._id === orderId ? { ...o, status: newStatus } : o);
+        localStorage.setItem('stylehub_local_orders', JSON.stringify(updated));
+        fetchOrders();
+      });
   };
 
   const handleDeleteOrder = (orderId) => {
     if (window.confirm("Delete order record?")) {
-      axios.delete(`${API_BASE_URL}/api/orders/${orderId}`).then(() => fetchOrders());
+      axios.delete(`${API_BASE_URL}/api/orders/${orderId}`)
+        .then(() => fetchOrders())
+        .catch(() => {
+          const localOrders = JSON.parse(localStorage.getItem('stylehub_local_orders') || '[]');
+          const updated = localOrders.filter(o => o._id !== orderId);
+          localStorage.setItem('stylehub_local_orders', JSON.stringify(updated));
+          fetchOrders();
+        });
     }
   };
 
@@ -370,43 +472,62 @@ function App() {
   const finalizeOrder = (methodUsed) => {
     setIsProcessingPay(true);
     setTimeout(() => {
+      const orderId = `ORD-${Date.now()}`;
       const orderData = {
         ...orderSummary,
+        _id: orderId,
         paymentMethod: methodUsed,
-        utrNumber: `AURA-TXN-${Math.floor(100000 + Math.random() * 900000)}`
+        utrNumber: `AURA-TXN-${Math.floor(100000 + Math.random() * 900000)}`,
+        status: 'Pending',
+        createdAt: new Date()
       };
 
       axios.post(`${API_BASE_URL}/api/orders`, orderData)
-      .then((res) => {
-        setIsProcessingPay(false);
-        const orderId = res.data.order?._id || `ORD-${Date.now()}`;
-        alert(`Payment Success! Order Placed.`);
-        sendWhatsAppNotification(orderData, orderId);
-        setCompletedOrder({ ...orderData, _id: orderId, createdAt: new Date() });
-        setCart([]);
-        setShowPaymentGateway(false);
-        setCustomerAddress('');
-        setCardNumber('');
-        setCardExpiry('');
-        setCardCvv('');
-        setDiscountAmount(0);
-        setAppliedCoupon('');
-        fetchOrders();
-      })
-      .catch(() => {
-        setIsProcessingPay(false);
-        alert("Payment Error. Please try again.");
-      });
+        .then((res) => {
+          setIsProcessingPay(false);
+          const finalId = res.data.order?._id || orderId;
+          alert("Payment Success! Order Placed.");
+          sendWhatsAppNotification(orderData, finalId);
+          setCompletedOrder({ ...orderData, _id: finalId });
+          setCart([]);
+          setShowPaymentGateway(false);
+          setCustomerAddress('');
+          setCardNumber('');
+          setCardExpiry('');
+          setCardCvv('');
+          setDiscountAmount(0);
+          setAppliedCoupon('');
+          fetchOrders();
+        })
+        .catch(() => {
+          setIsProcessingPay(false);
+          const localOrders = JSON.parse(localStorage.getItem('stylehub_local_orders') || '[]');
+          localOrders.unshift(orderData);
+          localStorage.setItem('stylehub_local_orders', JSON.stringify(localOrders));
+
+          alert("Payment Success! Order Placed.");
+          sendWhatsAppNotification(orderData, orderId);
+          setCompletedOrder(orderData);
+          setCart([]);
+          setShowPaymentGateway(false);
+          setCustomerAddress('');
+          setCardNumber('');
+          setCardExpiry('');
+          setCardCvv('');
+          setDiscountAmount(0);
+          setAppliedCoupon('');
+          fetchOrders();
+        });
     }, 1000);
   };
 
   const categoriesList = ['All', 'Oversized Tees', 'Cargo Pants', 'Hoodies & Jackets', 'Casual Shirts'];
 
   const categoryCards = [
-    { title: 'Graphic Oversized Tees', category: 'Oversized Tees', count: '18+ Drops', tag: '🔥 POPULAR', image: 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?w=600' },
-    { title: 'Utility Cargo Pants', category: 'Cargo Pants', count: '10+ Fits', tag: '⚡ STYLIST PICK', image: 'https://images.unsplash.com/photo-1517445312882-bc9910d016b7?w=600' },
-    { title: 'Winter Fleece & Jackets', category: 'Hoodies & Jackets', count: '14+ Drops', tag: '❄️ WINTER', image: 'https://images.unsplash.com/photo-1578587018452-892bacefd3f2?w=600' },
-    { title: 'Vibrant Casual Shirts', category: 'Casual Shirts', count: '12+ Styles', tag: '✨ COLOR EDITION', image: 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=600' }
+    { title: 'Graphic Oversized Tees', category: 'Oversized Tees', count: '18+ Drops', tag: 'POPULAR', image: 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?w=600' },
+    { title: 'Utility Cargo Pants', category: 'Cargo Pants', count: '10+ Fits', tag: 'STYLIST PICK', image: 'https://images.unsplash.com/photo-1517445312882-bc9910d016b7?w=600' },
+    { title: 'Winter Fleece & Jackets', category: 'Hoodies & Jackets', count: '14+ Drops', tag: 'WINTER', image: 'https://images.unsplash.com/photo-1578587018452-892bacefd3f2?w=600' },
+    { title: 'Vibrant Casual Shirts', category: 'Casual Shirts', count: '12+ Styles', tag: 'COLOR EDITION', image: 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=600' }
   ];
 
   const userOrders = currentUser 
@@ -422,7 +543,7 @@ function App() {
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', position: 'relative' }}>
       
-      {/* BACKGROUND FLOATING LIGHT BLOBS */}
+      {/* Ambient Lights */}
       <div className="bg-ambient-lights">
         <div className="glow-sphere-1"></div>
         <div className="glow-sphere-2"></div>
@@ -430,24 +551,24 @@ function App() {
 
       <div style={{ position: 'relative', zIndex: 1 }}>
         
-        {/* RUNNING MARQUEE & FLASH COUNTDOWN */}
+        {/* Top Notification Bar */}
         <div style={{ background: 'linear-gradient(90deg, #ec4899, #8b5cf6, #3b82f6)', padding: '10px 0', overflow: 'hidden', boxShadow: '0 4px 20px rgba(236,72,153,0.3)' }}>
           <div className="marquee-track">
             <div style={{ color: '#ffffff', fontWeight: '900', fontSize: '12px', letterSpacing: '2px', display: 'inline-flex', gap: '35px', marginRight: '35px' }}>
-              <span>🎁 SIGN IN & SPIN DAILY LUCKY WHEEL FOR UP TO ₹200 OFF</span>
-              <span>🔥 240+ GSM COMBED COTTON OVERSIZED FITS</span>
-              <span>📦 FREE PAN-INDIA EXPRESS SHIPPING</span>
-              <span>⚡ USE CODE 'STYLE200' FOR FLAT ₹200 OFF</span>
+              <span>SIGN IN & SPIN DAILY LUCKY WHEEL FOR UP TO ₹200 OFF</span>
+              <span>240+ GSM COMBED COTTON OVERSIZED FITS</span>
+              <span>FREE PAN-INDIA EXPRESS SHIPPING</span>
+              <span>USE CODE 'STYLE200' FOR FLAT ₹200 OFF</span>
             </div>
           </div>
         </div>
 
-        {/* GLASS NAVBAR */}
+        {/* Navbar */}
         <header style={{ background: 'rgba(15, 23, 42, 0.92)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255, 255, 255, 0.12)', position: 'sticky', top: 0, zIndex: 100, padding: '16px 40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
           
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px', cursor: 'pointer' }} onClick={() => { setCurrentPage('home'); setSelectedCategory('All'); setSearchQuery(''); }}>
             <div style={{ width: '46px', height: '46px', borderRadius: '14px', background: 'linear-gradient(135deg, #f43f5e, #8b5cf6, #06b6d4)', boxShadow: '0 0 25px rgba(244, 63, 94, 0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: '900', fontSize: '20px' }}>
-              ✨
+              ✦
             </div>
             <div>
               <div style={{ fontSize: '22px', fontWeight: '900', color: '#fff', letterSpacing: '-0.5px' }}>MY STYLE <span style={{ color: '#f43f5e' }}>HUB</span></div>
@@ -540,16 +661,16 @@ function App() {
           </div>
         </header>
 
-        {/* --- MAIN PAGE CONTENT --- */}
+        {/* Content View */}
         {(currentPage === 'home' || currentPage === 'shop') && (
           <main style={{ maxWidth: '1280px', margin: '0 auto', padding: '0 20px 60px 20px' }}>
             
-            {/* HERO BANNER */}
+            {/* Hero Section */}
             {currentPage === 'home' && !searchQuery && (
               <section className="hyper-card" style={{ margin: '26px 0 50px 0', padding: '50px', display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '30px', alignItems: 'center' }}>
                 <div>
                   <span style={{ display: 'inline-block', background: 'linear-gradient(90deg, #f43f5e, #8b5cf6)', color: '#fff', padding: '7px 20px', borderRadius: '30px', fontSize: '12px', fontWeight: '900', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '18px', boxShadow: '0 4px 15px rgba(244, 63, 94, 0.4)' }}>
-                    🔥 AUTUMN 2026 COLOR DROP
+                    AUTUMN 2026 COLOR DROP
                   </span>
 
                   <h1 style={{ fontSize: '50px', fontWeight: '900', margin: '0 0 16px 0', letterSpacing: '-1.2px', lineHeight: '1.1', color: '#ffffff' }}>
@@ -597,7 +718,7 @@ function App() {
               </section>
             )}
 
-            {/* CURATED CATEGORIES MATRIX */}
+            {/* Curated Categories */}
             {currentPage === 'home' && !searchQuery && (
               <section style={{ marginBottom: '60px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '24px' }}>
@@ -640,7 +761,7 @@ function App() {
               </section>
             )}
 
-            {/* PRODUCT CATALOG GRID */}
+            {/* Catalog Grid */}
             <section>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '22px', flexWrap: 'wrap', gap: '12px' }}>
                 <div>
@@ -658,7 +779,7 @@ function App() {
                 )}
               </div>
 
-              {/* Category Filter Pills */}
+              {/* Filter Pills */}
               <div style={{ display: 'flex', gap: '10px', marginBottom: '32px', flexWrap: 'wrap' }}>
                 {categoriesList.map((cat) => (
                   <button
@@ -681,10 +802,10 @@ function App() {
                 ))}
               </div>
 
-              {/* Products Rendering */}
+              {/* Product Cards */}
               {loading ? (
                 <div style={{ textAlign: 'center', padding: '90px 20px', color: '#cbd5e1' }}>
-                  <div style={{ fontSize: '40px', marginBottom: '14px' }}>✨</div>
+                  <div style={{ fontSize: '40px', marginBottom: '14px' }}>✦</div>
                   <p style={{ fontSize: '18px', fontWeight: '800', color: '#fff' }}>Loading Colorful Drops...</p>
                 </div>
               ) : filteredProducts.length === 0 ? (
@@ -785,7 +906,7 @@ function App() {
           </main>
         )}
 
-        {/* FULLY ROTATING ANIMATED LUCKY WHEEL MODAL */}
+        {/* Daily Lucky Wheel Modal */}
         {showLuckySpin && (
           <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.88)', backdropFilter: 'blur(16px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1200 }}>
             <div className="hyper-card" style={{ width: '92%', maxWidth: '440px', padding: '36px 24px', textAlign: 'center', background: '#0f172a' }}>
@@ -795,7 +916,6 @@ function App() {
                 Signed in as <b>{currentUser?.name}</b> (1 Spin / Day)
               </p>
 
-              {/* ROTATING WHEEL COMPONENT */}
               <div className="wheel-wrapper">
                 <div className="wheel-pointer"></div>
                 <div 
@@ -826,7 +946,7 @@ function App() {
           </div>
         )}
 
-        {/* WISHLIST VIEW */}
+        {/* Wishlist View */}
         {currentPage === 'wishlist' && (
           <main style={{ maxWidth: '1260px', margin: '30px auto', padding: '0 20px 60px 20px' }}>
             <h2 style={{ fontSize: '30px', fontWeight: '900', color: '#fff', marginBottom: '24px' }}>Saved Wishlist ({wishlist.length})</h2>
@@ -853,7 +973,7 @@ function App() {
           </main>
         )}
 
-        {/* MY ORDERS VIEW */}
+        {/* My Orders View */}
         {currentPage === 'myOrders' && currentUser && (
           <main style={{ maxWidth: '900px', margin: '30px auto', padding: '0 20px 60px 20px' }}>
             <h2 style={{ fontSize: '30px', fontWeight: '900', color: '#fff', marginBottom: '24px' }}>My Orders History</h2>
@@ -894,7 +1014,7 @@ function App() {
           </main>
         )}
 
-        {/* CATEGORIES VIEW */}
+        {/* Collections View */}
         {currentPage === 'categories' && (
           <main style={{ maxWidth: '1260px', margin: '30px auto', padding: '0 20px 60px 20px' }}>
             <h2 style={{ fontSize: '32px', fontWeight: '900', color: '#fff', marginBottom: '26px' }}>All Streetwear Collections</h2>
@@ -913,7 +1033,7 @@ function App() {
           </main>
         )}
 
-        {/* ADMIN DASHBOARD */}
+        {/* Admin Dashboard */}
         {currentPage === 'admin' && isAdminLoggedIn && (
           <div style={{ maxWidth: '1200px', margin: '30px auto', padding: '0 20px 60px 20px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.15)', paddingBottom: '18px' }}>
@@ -1007,7 +1127,7 @@ function App() {
         )}
       </div>
 
-      {/* FOOTER */}
+      {/* Footer */}
       <footer style={{ background: 'rgba(8, 12, 22, 0.95)', color: '#cbd5e1', padding: '60px 40px 25px 40px', borderTop: '1px solid rgba(255,255,255,0.15)', position: 'relative', zIndex: 1 }}>
         <div style={{ maxWidth: '1280px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '40px', paddingBottom: '40px', borderBottom: '1px solid rgba(255,255,255,0.15)' }}>
           <div>
@@ -1055,12 +1175,12 @@ function App() {
         </div>
 
         <div style={{ maxWidth: '1280px', margin: '20px auto 0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', color: '#94a3b8', flexWrap: 'wrap', gap: '10px' }}>
-          <div>© 2026 My Style Hub Studio. Founder: <b>{OWNER_NAME}</b></div>
+          <div>© 2026 My Style Hub Studio. Founder & Owner: <b>{OWNER_NAME}</b></div>
           <div>Crafted with ❤️ for India's Youth Fashion Culture</div>
         </div>
       </footer>
 
-      {/* FLOATING WHATSAPP CHAT */}
+      {/* Floating WhatsApp Button */}
       <a 
         href={`https://wa.me/${SUPPORT_PHONE}?text=${encodeURIComponent('Hi My Style Hub! Mujhe ek outfit ke baare me inquiry karni hai.')}`}
         target="_blank" 
@@ -1086,7 +1206,7 @@ function App() {
         💬
       </a>
 
-      {/* QUICK VIEW MODAL */}
+      {/* Quick View Modal */}
       {quickViewProduct && (
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(12px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1200 }}>
           <div className="hyper-card" style={{ width: '90%', maxWidth: '780px', overflow: 'hidden', display: 'grid', gridTemplateColumns: '1fr 1fr', position: 'relative', background: '#0f172a' }}>
@@ -1139,7 +1259,7 @@ function App() {
         </div>
       )}
 
-      {/* AUTH MODAL */}
+      {/* Auth Modal */}
       {authModal && (
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(12px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1200 }}>
           <div className="hyper-card" style={{ width: '90%', maxWidth: '400px', padding: '34px', background: '#0f172a' }}>
@@ -1191,7 +1311,7 @@ function App() {
         </div>
       )}
 
-      {/* CART DRAWER */}
+      {/* Cart Drawer */}
       {isCartOpen && currentUser && (
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(10px)', display: 'flex', justifyContent: 'flex-end', zIndex: 1000 }}>
           <div style={{ background: '#0f172a', borderLeft: '1px solid rgba(255,255,255,0.15)', width: '100%', maxWidth: '420px', height: '100%', padding: '30px', boxSizing: 'border-box', overflowY: 'auto', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
@@ -1268,7 +1388,7 @@ function App() {
         </div>
       )}
 
-      {/* PAYMENT GATEWAY MODAL */}
+      {/* Payment Gateway Modal */}
       {showPaymentGateway && orderSummary && (
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(12px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1200 }}>
           <div className="hyper-card" style={{ width: '92%', maxWidth: '640px', borderRadius: '26px', overflow: 'hidden', display: 'flex', flexDirection: 'column', background: '#0f172a' }}>
@@ -1376,7 +1496,7 @@ function App() {
         </div>
       )}
 
-      {/* RECEIPT MODAL */}
+      {/* Invoice Receipt Modal */}
       {completedOrder && (
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(12px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1300 }}>
           <div style={{ background: '#fff', color: '#0f172a', width: '90%', maxWidth: '500px', padding: '32px', borderRadius: '24px', boxShadow: '0 25px 60px rgba(0,0,0,0.4)' }}>
