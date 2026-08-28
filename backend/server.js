@@ -1,66 +1,64 @@
 const express = require('express');
-const cors = require('cors');
 const mongoose = require('mongoose');
+const cors = require('cors');
 require('dotenv').config();
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-const MONGO_URI = process.env.MONGO_URI;
+// MongoDB Connection
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => console.log('MongoDB Connected Successfully'))
+  .catch((err) => console.error('MongoDB Error:', err));
 
-mongoose.connect(MONGO_URI)
-  .then(() => console.log(">>> MongoDB Connected Successfully! <<<"))
-  .catch((err) => console.error("MongoDB Connection Error:", err));
-
-// 1. User Schema
-const userSchema = new mongoose.Schema({
+// Schemas
+const UserSchema = new mongoose.Schema({
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   phone: { type: String, required: true },
   password: { type: String, required: true }
-}, { timestamps: true });
+});
 
-const User = mongoose.model('User', userSchema);
-
-// 2. Product Schema (Strict category definition)
-const productSchema = new mongoose.Schema({
+const ProductSchema = new mongoose.Schema({
   name: { type: String, required: true },
   price: { type: Number, required: true },
-  category: { type: String, required: true }, // Required category
-  description: { type: String, default: "" },
-  image: { type: String, default: "" },
+  category: { type: String, required: true },
+  description: { type: String },
+  image: { type: String, required: true },
   sizes: { type: [String], default: ["S", "M", "L", "XL", "XXL"] }
-}, { timestamps: true });
+});
 
-const Product = mongoose.model('Product', productSchema);
+const OrderSchema = new mongoose.Schema({
+  customerName: String,
+  customerPhone: String,
+  customerEmail: String,
+  customerAddress: String,
+  items: Array,
+  rawAmount: Number,
+  discount: Number,
+  totalAmount: Number,
+  paymentMethod: String,
+  utrNumber: String,
+  status: { type: String, default: 'Pending' },
+  createdAt: { type: Date, default: Date.now }
+});
 
-// 3. Order Schema
-const orderSchema = new mongoose.Schema({
-  customerName: { type: String, required: true },
-  customerPhone: { type: String, required: true },
-  customerEmail: { type: String, default: '' },
-  customerAddress: { type: String, required: true },
-  items: { type: Array, required: true },
-  totalAmount: { type: Number, required: true },
-  paymentMethod: { type: String, default: 'UPI' },
-  utrNumber: { type: String, default: '' },
-  status: { type: String, default: 'Pending' }
-}, { timestamps: true });
+const User = mongoose.model('User', UserSchema);
+const Product = mongoose.model('Product', ProductSchema);
+const Order = mongoose.model('Order', OrderSchema);
 
-const Order = mongoose.model('Order', orderSchema);
-
-// --- Auth Routes ---
+// Auth Routes
 app.post('/api/auth/register', async (req, res) => {
   try {
     const { name, email, phone, password } = req.body;
     const existing = await User.findOne({ email });
-    if (existing) return res.status(400).json({ error: "Email already registered!" });
-    const newUser = new User({ name, email, phone, password });
-    await newUser.save();
-    res.status(201).json({ message: "Registered!", user: { name: newUser.name, email: newUser.email, phone: newUser.phone } });
+    if (existing) return res.status(400).json({ error: 'Email already registered. Please Login.' });
+    const user = new User({ name, email, phone, password });
+    await user.save();
+    res.json({ message: 'User registered', user });
   } catch (err) {
-    res.status(500).json({ error: "Registration failed." });
+    res.status(500).json({ error: 'Registration failed' });
   }
 });
 
@@ -68,91 +66,79 @@ app.post('/api/auth/login', async (req, res) => {
   try {
     const { email, password } = req.body;
     const user = await User.findOne({ email, password });
-    if (!user) return res.status(400).json({ error: "Invalid Credentials!" });
-    res.json({ message: "Login successful!", user: { name: user.name, email: user.email, phone: user.phone } });
+    if (!user) return res.status(400).json({ error: 'Account nahi mila ya password galat hai. Pehle Sign Up karein!' });
+    res.json({ message: 'Login successful', user });
   } catch (err) {
-    res.status(500).json({ error: "Login failed." });
+    res.status(500).json({ error: 'Login failed' });
   }
 });
 
-// --- Product Routes ---
+// Product Routes
 app.get('/api/products', async (req, res) => {
   try {
-    const products = await Product.find().sort({ createdAt: -1 });
+    const products = await Product.find();
     res.json(products);
   } catch (err) {
-    res.status(500).json({ error: "Fetch failed" });
+    res.status(500).json({ error: 'Fetch failed' });
   }
 });
 
 app.post('/api/products', async (req, res) => {
   try {
-    const { name, price, category, description, image, sizes } = req.body;
-    const newProduct = new Product({
-      name,
-      price: Number(price),
-      category: category || 'Oversized Tees',
-      description,
-      image,
-      sizes: sizes || ["S", "M", "L", "XL", "XXL"]
-    });
-    await newProduct.save();
-    console.log("Saved product with category:", newProduct.category);
-    res.status(201).json(newProduct);
+    const product = new Product(req.body);
+    await product.save();
+    res.json({ message: 'Product added', product });
   } catch (err) {
-    console.error("Save error:", err);
-    res.status(400).json({ error: "Product save failed" });
+    res.status(500).json({ error: 'Failed to add product' });
   }
 });
 
 app.delete('/api/products/:id', async (req, res) => {
   try {
     await Product.findByIdAndDelete(req.params.id);
-    res.json({ message: "Product deleted" });
+    res.json({ message: 'Product deleted' });
   } catch (err) {
-    res.status(400).json({ error: "Delete failed" });
+    res.status(500).json({ error: 'Failed to delete' });
   }
 });
 
-// --- Order Routes ---
+// Order Routes
 app.get('/api/orders', async (req, res) => {
   try {
     const orders = await Order.find().sort({ createdAt: -1 });
     res.json(orders);
   } catch (err) {
-    res.status(500).json({ error: "Fetch orders failed" });
+    res.status(500).json({ error: 'Fetch failed' });
   }
 });
 
 app.post('/api/orders', async (req, res) => {
   try {
-    const newOrder = new Order(req.body);
-    await newOrder.save();
-    res.status(201).json({ message: "Order placed", order: newOrder });
+    const order = new Order(req.body);
+    await order.save();
+    res.json({ message: 'Order created', order });
   } catch (err) {
-    res.status(400).json({ error: "Order failed" });
+    res.status(500).json({ error: 'Order failed' });
   }
 });
 
 app.put('/api/orders/:id', async (req, res) => {
   try {
-    const updatedOrder = await Order.findByIdAndUpdate(req.params.id, { status: req.body.status }, { new: true });
-    res.json(updatedOrder);
+    const order = await Order.findByIdAndUpdate(req.params.id, { status: req.body.status }, { new: true });
+    res.json(order);
   } catch (err) {
-    res.status(400).json({ error: "Status update failed" });
+    res.status(500).json({ error: 'Update failed' });
   }
 });
 
 app.delete('/api/orders/:id', async (req, res) => {
   try {
     await Order.findByIdAndDelete(req.params.id);
-    res.json({ message: "Order deleted" });
+    res.json({ message: 'Order deleted' });
   } catch (err) {
-    res.status(400).json({ error: "Delete failed" });
+    res.status(500).json({ error: 'Delete failed' });
   }
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-});
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
