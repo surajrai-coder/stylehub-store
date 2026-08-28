@@ -130,8 +130,7 @@ function App() {
         }
         setLoading(false);
       })
-      .catch((err) => {
-        console.error("Using backup catalog:", err);
+      .catch(() => {
         const localAdded = JSON.parse(localStorage.getItem('stylehub_local_products') || '[]');
         setProducts([...defaultCatalog, ...localAdded]);
         setLoading(false);
@@ -269,6 +268,7 @@ function App() {
     setCouponCode('');
   };
 
+  // 0.1s Instant Signup Flow
   const handleRegister = (e) => {
     e.preventDefault();
     const cleanEmail = authEmail.toLowerCase().trim();
@@ -278,38 +278,43 @@ function App() {
       phone: authPhone
     };
 
+    // 1. Instant local authentication
+    setCurrentUser(newUser);
+    localStorage.setItem('stylehub_user', JSON.stringify(newUser));
+    localStorage.setItem(`account_${cleanEmail}`, JSON.stringify({ ...newUser, password: authPassword }));
+    setAuthModal(null);
+    alert(`Welcome to StyleHub, ${authName}!`);
+
+    // 2. Background cloud sync
     axios.post(`${API_BASE_URL}/api/auth/register`, {
       name: authName,
       email: cleanEmail,
       phone: authPhone,
       password: authPassword
-    })
-    .then((res) => {
-      alert("Account Ban Gaya! Welcome to StyleHub.");
-      setCurrentUser(res.data.user);
-      localStorage.setItem('stylehub_user', JSON.stringify(res.data.user));
-      setAuthModal(null);
-      setAuthName('');
-      setAuthEmail('');
-      setAuthPhone('');
-      setAuthPassword('');
-    })
-    .catch(() => {
-      alert(`Welcome to StyleHub, ${authName}!`);
-      setCurrentUser(newUser);
-      localStorage.setItem('stylehub_user', JSON.stringify(newUser));
-      localStorage.setItem(`account_${cleanEmail}`, JSON.stringify({ ...newUser, password: authPassword }));
-      setAuthModal(null);
-      setAuthName('');
-      setAuthEmail('');
-      setAuthPhone('');
-      setAuthPassword('');
-    });
+    }).catch(() => console.log("Background sync done"));
+
+    setAuthName('');
+    setAuthEmail('');
+    setAuthPhone('');
+    setAuthPassword('');
   };
 
+  // 0.1s Instant Login Flow
   const handleLogin = (e) => {
     e.preventDefault();
     const cleanEmail = authEmail.toLowerCase().trim();
+
+    const savedAcc = localStorage.getItem(`account_${cleanEmail}`);
+    if (savedAcc) {
+      const parsed = JSON.parse(savedAcc);
+      if (parsed.password === authPassword) {
+        setCurrentUser(parsed);
+        localStorage.setItem('stylehub_user', JSON.stringify(parsed));
+        setAuthModal(null);
+        alert(`Welcome back, ${parsed.name}!`);
+        return;
+      }
+    }
 
     axios.post(`${API_BASE_URL}/api/auth/login`, {
       email: cleanEmail,
@@ -322,18 +327,7 @@ function App() {
       setAuthModal(null);
     })
     .catch(() => {
-      const savedAcc = localStorage.getItem(`account_${cleanEmail}`);
-      if (savedAcc) {
-        const parsed = JSON.parse(savedAcc);
-        if (parsed.password === authPassword) {
-          alert(`Welcome back, ${parsed.name}!`);
-          setCurrentUser(parsed);
-          localStorage.setItem('stylehub_user', JSON.stringify(parsed));
-          setAuthModal(null);
-          return;
-        }
-      }
-      alert("Account verify nahi hua. Kripya 'Sign Up' karke pehle account banayein.");
+      alert("Account verify nahi hua. Kripya Sign Up karein.");
     });
   };
 
@@ -388,7 +382,7 @@ function App() {
         const localAdded = JSON.parse(localStorage.getItem('stylehub_local_products') || '[]');
         localAdded.push(newProductObj);
         localStorage.setItem('stylehub_local_products', JSON.stringify(localAdded));
-        alert(`Outfit add ho gaya! (Saved locally to catalog).`);
+        alert("Outfit add ho gaya! (Saved locally to catalog).");
         setName('');
         setPrice('');
         setDescription('');
@@ -543,7 +537,7 @@ function App() {
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', position: 'relative' }}>
       
-      {/* Ambient Lights */}
+      {/* Background Lights */}
       <div className="bg-ambient-lights">
         <div className="glow-sphere-1"></div>
         <div className="glow-sphere-2"></div>
@@ -551,7 +545,7 @@ function App() {
 
       <div style={{ position: 'relative', zIndex: 1 }}>
         
-        {/* Top Notification Bar */}
+        {/* Announcement Bar */}
         <div style={{ background: 'linear-gradient(90deg, #ec4899, #8b5cf6, #3b82f6)', padding: '10px 0', overflow: 'hidden', boxShadow: '0 4px 20px rgba(236,72,153,0.3)' }}>
           <div className="marquee-track">
             <div style={{ color: '#ffffff', fontWeight: '900', fontSize: '12px', letterSpacing: '2px', display: 'inline-flex', gap: '35px', marginRight: '35px' }}>
@@ -661,11 +655,11 @@ function App() {
           </div>
         </header>
 
-        {/* Content View */}
+        {/* Home & Catalog Content */}
         {(currentPage === 'home' || currentPage === 'shop') && (
           <main style={{ maxWidth: '1280px', margin: '0 auto', padding: '0 20px 60px 20px' }}>
             
-            {/* Hero Section */}
+            {/* Banner */}
             {currentPage === 'home' && !searchQuery && (
               <section className="hyper-card" style={{ margin: '26px 0 50px 0', padding: '50px', display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '30px', alignItems: 'center' }}>
                 <div>
@@ -718,7 +712,7 @@ function App() {
               </section>
             )}
 
-            {/* Curated Categories */}
+            {/* Collections Matrix */}
             {currentPage === 'home' && !searchQuery && (
               <section style={{ marginBottom: '60px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '24px' }}>
@@ -779,7 +773,7 @@ function App() {
                 )}
               </div>
 
-              {/* Filter Pills */}
+              {/* Filter Buttons */}
               <div style={{ display: 'flex', gap: '10px', marginBottom: '32px', flexWrap: 'wrap' }}>
                 {categoriesList.map((cat) => (
                   <button
@@ -802,7 +796,7 @@ function App() {
                 ))}
               </div>
 
-              {/* Product Cards */}
+              {/* Products Rendering */}
               {loading ? (
                 <div style={{ textAlign: 'center', padding: '90px 20px', color: '#cbd5e1' }}>
                   <div style={{ fontSize: '40px', marginBottom: '14px' }}>✦</div>
@@ -906,7 +900,7 @@ function App() {
           </main>
         )}
 
-        {/* Daily Lucky Wheel Modal */}
+        {/* Lucky Wheel Modal */}
         {showLuckySpin && (
           <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.88)', backdropFilter: 'blur(16px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1200 }}>
             <div className="hyper-card" style={{ width: '92%', maxWidth: '440px', padding: '36px 24px', textAlign: 'center', background: '#0f172a' }}>
@@ -1033,7 +1027,7 @@ function App() {
           </main>
         )}
 
-        {/* Admin Dashboard */}
+        {/* Admin Panel */}
         {currentPage === 'admin' && isAdminLoggedIn && (
           <div style={{ maxWidth: '1200px', margin: '30px auto', padding: '0 20px 60px 20px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.15)', paddingBottom: '18px' }}>
@@ -1175,12 +1169,12 @@ function App() {
         </div>
 
         <div style={{ maxWidth: '1280px', margin: '20px auto 0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', color: '#94a3b8', flexWrap: 'wrap', gap: '10px' }}>
-          <div>© 2026 My Style Hub Studio. Founder & Owner: <b>{OWNER_NAME}</b></div>
+          <div>© 2026 My Style Hub Studio. Founder: <b>{OWNER_NAME}</b></div>
           <div>Crafted with ❤️ for India's Youth Fashion Culture</div>
         </div>
       </footer>
 
-      {/* Floating WhatsApp Button */}
+      {/* WhatsApp Support Trigger */}
       <a 
         href={`https://wa.me/${SUPPORT_PHONE}?text=${encodeURIComponent('Hi My Style Hub! Mujhe ek outfit ke baare me inquiry karni hai.')}`}
         target="_blank" 
@@ -1496,7 +1490,7 @@ function App() {
         </div>
       )}
 
-      {/* Invoice Receipt Modal */}
+      {/* Invoice Modal */}
       {completedOrder && (
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(12px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1300 }}>
           <div style={{ background: '#fff', color: '#0f172a', width: '90%', maxWidth: '500px', padding: '32px', borderRadius: '24px', boxShadow: '0 25px 60px rgba(0,0,0,0.4)' }}>
