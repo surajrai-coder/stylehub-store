@@ -1,84 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './App.css';
+import './lamplogin.css';
+import LampLogin from './lamplogin';
 
 function App() {
-  const [products, setProducts] = useState([]);
-  const [orders, setOrders] = useState([]);
-  const [cart, setCart] = useState([]);
-  const [wishlist, setWishlist] = useState([]);
-  const [isCartOpen, setIsCartOpen] = useState(false);
-  const [loading, setLoading] = useState(true);
-  
-  // Navigation & Filter States
-  const [currentPage, setCurrentPage] = useState('home');
-  const [adminTab, setAdminTab] = useState('products');
-  const [selectedCategory, setSelectedCategory] = useState('All');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [itemSizes, setItemSizes] = useState({});
-  const [quickViewProduct, setQuickViewProduct] = useState(null);
-
-  // Animated Lucky Wheel States
-  const [showLuckySpin, setShowLuckySpin] = useState(false);
-  const [isSpinning, setIsSpinning] = useState(false);
-  const [wheelRotation, setWheelRotation] = useState(0);
-  const [spinReward, setSpinReward] = useState(null);
-
-  // AI Stylist States
-  const [aiVibe, setAiVibe] = useState('Summer Neon Street');
-  const [isGeneratingAi, setIsGeneratingAi] = useState(false);
-  const [aiRecommendation, setAiRecommendation] = useState(null);
-
-  // Auth States
-  const [currentUser, setCurrentUser] = useState(null);
-  const [authModal, setAuthModal] = useState(null);
-  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
-
-  // Coupon States
-  const [couponCode, setCouponCode] = useState('');
-  const [discountAmount, setDiscountAmount] = useState(0);
-  const [appliedCoupon, setAppliedCoupon] = useState('');
-
-  // Form Inputs
-  const [authName, setAuthName] = useState('');
-  const [authEmail, setAuthEmail] = useState('');
-  const [authPhone, setAuthPhone] = useState('');
-  const [authPassword, setAuthPassword] = useState('');
-  const [adminPin, setAdminPin] = useState('');
-
-  // Admin Form State
-  const [name, setName] = useState('');
-  const [price, setPrice] = useState('');
-  const [category, setCategory] = useState('Oversized Tees');
-  const [description, setDescription] = useState('');
-  const [image, setImage] = useState('');
-
-  // Checkout States
-  const [customerAddress, setCustomerAddress] = useState('');
-  const [showPaymentGateway, setShowPaymentGateway] = useState(false);
-  const [paymentTab, setPaymentTab] = useState('upi');
-  const [orderSummary, setOrderSummary] = useState(null);
-  const [newsletterEmail, setNewsletterEmail] = useState('');
-  const [completedOrder, setCompletedOrder] = useState(null);
-  const [showQrCode, setShowQrCode] = useState(false);
-
-  // Simulation Cards
-  const [cardNumber, setCardNumber] = useState('');
-  const [cardExpiry, setCardExpiry] = useState('');
-  const [cardCvv, setCardCvv] = useState('');
-  const [selectedBank, setSelectedBank] = useState('State Bank of India (SBI)');
-  const [isProcessingPay, setIsProcessingPay] = useState(false);
-
-  // Config
-  const API_BASE_URL = "https://stylehub-store.onrender.com";
-  const UPI_ID = "ksuraj07501@okaxis"; 
-  const ACCOUNT_HOLDER = "Suraj Kumar";
-  const ADMIN_SECRET = "Suraj6284";
-  const SUPPORT_PHONE = "916284319095";
-  const SUPPORT_EMAIL = "ksuraj07501@gmail.com";
-  const STORE_ADDRESS = "SBLS Nagar, Jalandhar, Punjab";
-  const OWNER_NAME = "Suraj Rai";
-
   const defaultCatalog = [
     {
       _id: "def_1",
@@ -118,24 +44,105 @@ function App() {
     }
   ];
 
-  const fetchProducts = () => {
-    setLoading(true);
+  // Instant pre-load for 0-second loading
+  const [products, setProducts] = useState(() => {
+    const local = localStorage.getItem('stylehub_local_products');
+    return local ? [...defaultCatalog, ...JSON.parse(local)] : defaultCatalog;
+  });
+
+  const [orders, setOrders] = useState([]);
+  const [usersList, setUsersList] = useState([]);
+  const [cart, setCart] = useState([]);
+  const [wishlist, setWishlist] = useState([]);
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [loading, setLoading] = useState(false); // Zero-delay
+  
+  const [currentPage, setCurrentPage] = useState('home');
+  const [adminTab, setAdminTab] = useState('analytics');
+  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [itemSizes, setItemSizes] = useState({});
+  const [quickViewProduct, setQuickViewProduct] = useState(null);
+  const [siteVisits, setSiteVisits] = useState(1);
+
+  const wheelSlices = [
+    { label: "₹200 OFF", bg: "#f43f5e", discount: 200 },
+    { label: "₹50 OFF", bg: "#8b5cf6", discount: 50 },
+    { label: "₹150 OFF", bg: "#10b981", discount: 150 },
+    { label: "₹300 VIP", bg: "#3b82f6", discount: 300 },
+    { label: "₹100 OFF", bg: "#f59e0b", discount: 100 },
+    { label: "₹75 OFF", bg: "#ec4899", discount: 75 },
+    { label: "₹250 OFF", bg: "#06b6d4", discount: 250 },
+    { label: "₹120 OFF", bg: "#6366f1", discount: 120 }
+  ];
+
+  const [showLuckySpin, setShowLuckySpin] = useState(false);
+  const [isSpinning, setIsSpinning] = useState(false);
+  const [wheelRotation, setWheelRotation] = useState(0);
+  const [spinReward, setSpinReward] = useState(null);
+
+  const [currentUser, setCurrentUser] = useState(null);
+  const [authModal, setAuthModal] = useState(null);
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
+
+  const [couponCode, setCouponCode] = useState('');
+  const [discountAmount, setDiscountAmount] = useState(0);
+  const [appliedCoupon, setAppliedCoupon] = useState('');
+
+  const [name, setName] = useState('');
+  const [price, setPrice] = useState('');
+  const [category, setCategory] = useState('Oversized Tees');
+  const [description, setDescription] = useState('');
+  const [image, setImage] = useState('');
+
+  const [customerAddress, setCustomerAddress] = useState('');
+  const [showPaymentGateway, setShowPaymentGateway] = useState(false);
+  const [paymentTab, setPaymentTab] = useState('upi');
+  const [orderSummary, setOrderSummary] = useState(null);
+  const [newsletterEmail, setNewsletterEmail] = useState('');
+  const [completedOrder, setCompletedOrder] = useState(null);
+  const [showQrCode, setShowQrCode] = useState(false);
+
+  const [cardNumber, setCardNumber] = useState('');
+  const [cardExpiry, setCardExpiry] = useState('');
+  const [cardCvv, setCardCvv] = useState('');
+  const [selectedBank, setSelectedBank] = useState('State Bank of India (SBI)');
+  const [isProcessingPay, setIsProcessingPay] = useState(false);
+
+  const API_BASE_URL = "https://stylehub-store.onrender.com";
+  const UPI_ID = "ksuraj07501@okaxis"; 
+  const ACCOUNT_HOLDER = "Suraj Kumar";
+  const ADMIN_SECRET = "Suraj6284";
+  const SUPPORT_PHONE = "916284319095";
+  const SUPPORT_EMAIL = "ksuraj07501@gmail.com";
+  const STORE_ADDRESS = "SBLS Nagar, Jalandhar, Punjab";
+  const OWNER_NAME = "Suraj Rai";
+
+  useEffect(() => {
+    const visits = parseInt(localStorage.getItem('stylehub_site_visits') || '142', 10) + 1;
+    localStorage.setItem('stylehub_site_visits', visits.toString());
+    setSiteVisits(visits);
+
+    // Silent background fetch (Zero screen blocking)
     axios.get(`${API_BASE_URL}/api/products`)
       .then((res) => {
         if (Array.isArray(res.data) && res.data.length > 0) {
           setProducts(res.data);
-        } else {
-          const localAdded = JSON.parse(localStorage.getItem('stylehub_local_products') || '[]');
-          setProducts([...defaultCatalog, ...localAdded]);
         }
-        setLoading(false);
       })
-      .catch(() => {
-        const localAdded = JSON.parse(localStorage.getItem('stylehub_local_products') || '[]');
-        setProducts([...defaultCatalog, ...localAdded]);
-        setLoading(false);
-      });
-  };
+      .catch(() => {});
+
+    fetchOrders();
+    fetchUsers();
+
+    const savedUser = localStorage.getItem('stylehub_user');
+    if (savedUser) {
+      const parsed = JSON.parse(savedUser);
+      setCurrentUser(parsed);
+      const savedWish = localStorage.getItem(`wishlist_${parsed.email}`);
+      if (savedWish) setWishlist(JSON.parse(savedWish));
+    }
+  }, []);
 
   const fetchOrders = () => {
     axios.get(`${API_BASE_URL}/api/orders`)
@@ -146,21 +153,23 @@ function App() {
       });
   };
 
-  useEffect(() => {
-    fetchProducts();
-    fetchOrders();
-    const savedUser = localStorage.getItem('stylehub_user');
-    if (savedUser) {
-      const parsed = JSON.parse(savedUser);
-      setCurrentUser(parsed);
-      const savedWish = localStorage.getItem(`wishlist_${parsed.email}`);
-      if (savedWish) setWishlist(JSON.parse(savedWish));
+  const fetchUsers = () => {
+    const allUsers = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('account_')) {
+        try {
+          const u = JSON.parse(localStorage.getItem(key));
+          allUsers.push(u);
+        } catch (e) {}
+      }
     }
-  }, []);
+    setUsersList(allUsers);
+  };
 
   const openLuckyWheelModal = () => {
     if (!currentUser) {
-      alert("Lucky Wheel spin karne ke liye pehle Login / Sign Up karein!");
+      alert("Please Sign In or Create an Account to spin the Lucky Wheel!");
       setAuthModal('login');
       return;
     }
@@ -169,7 +178,7 @@ function App() {
     const lastSpunDate = localStorage.getItem(`last_spin_${currentUser.email}`);
 
     if (lastSpunDate === todayDate) {
-      alert("Aaj ka lucky spin aap use kar chuke hain! Kal dobara aakar naya coupon spin karein.");
+      alert("You have already used your lucky spin for today! Come back tomorrow for a new prize.");
       return;
     }
 
@@ -181,8 +190,11 @@ function App() {
     if (isSpinning) return;
     setIsSpinning(true);
 
-    const randomRot = 1800 + Math.floor(Math.random() * 1800);
-    const newTotalRot = wheelRotation + randomRot;
+    const randomIndex = Math.floor(Math.random() * wheelSlices.length);
+    const sliceAngle = 360 / 8;
+    const landingOffset = 360 - (randomIndex * sliceAngle) - (sliceAngle / 2);
+    const fullRounds = 360 * 7;
+    const newTotalRot = wheelRotation + fullRounds + landingOffset;
     setWheelRotation(newTotalRot);
 
     setTimeout(() => {
@@ -190,29 +202,20 @@ function App() {
       const todayDate = new Date().toISOString().slice(0, 10);
       localStorage.setItem(`last_spin_${currentUser.email}`, todayDate);
 
-      setDiscountAmount(200);
-      setAppliedCoupon('STYLE200');
-      setSpinReward('Congratulations! You won Flat ₹200 OFF! Code "STYLE200" applied to your bag.');
-    }, 4100);
-  };
+      const won = wheelSlices[randomIndex];
+      const userPrefix = (currentUser.name.replace(/[^a-zA-Z]/g, '').slice(0, 3) || 'FIT').toUpperCase();
+      const uniqueCode = `STYLE-${userPrefix}-${Math.floor(1000 + Math.random() * 9000)}`;
+      
+      localStorage.setItem(`user_coupon_${currentUser.email}`, JSON.stringify({
+        code: uniqueCode,
+        discount: won.discount,
+        ownerEmail: currentUser.email
+      }));
 
-  const runAiStylist = () => {
-    setIsGeneratingAi(true);
-    setTimeout(() => {
-      let filtered = products;
-      if (aiVibe === 'Summer Neon Street') {
-        filtered = products.filter(p => p.category === 'Oversized Tees' || p.category === 'Cargo Pants');
-      } else if (aiVibe === 'Winter Aura') {
-        filtered = products.filter(p => p.category === 'Hoodies & Jackets');
-      }
-      
-      const randomFit = filtered.length > 0 
-        ? filtered[Math.floor(Math.random() * filtered.length)] 
-        : products[0];
-      
-      setAiRecommendation(randomFit);
-      setIsGeneratingAi(false);
-    }, 1000);
+      setDiscountAmount(won.discount);
+      setAppliedCoupon(uniqueCode);
+      setSpinReward(`🎉 CONGRATULATIONS! You won ${won.label}! Exclusive coupon "${uniqueCode}" has been auto-applied.`);
+    }, 4600);
   };
 
   const handleSizeSelect = (productId, size) => {
@@ -221,7 +224,7 @@ function App() {
 
   const toggleWishlist = (product) => {
     if (!currentUser) {
-      alert("Wishlist save karne ke liye pehle Login karein!");
+      alert("Please Sign In first to save items to your wishlist!");
       setAuthModal('login');
       return;
     }
@@ -233,7 +236,7 @@ function App() {
 
   const addToCart = (product) => {
     if (!currentUser) {
-      alert("Shopping karne ke liye pehle Login / Sign Up karein!");
+      alert("Please Sign In or Create an Account to start shopping!");
       setAuthModal('login');
       return;
     }
@@ -245,9 +248,25 @@ function App() {
 
   const applyCoupon = () => {
     const cleanCode = couponCode.trim().toUpperCase();
+    if (!currentUser) {
+      alert("Please Sign In to redeem coupons.");
+      return;
+    }
+
+    const savedUserCoupon = localStorage.getItem(`user_coupon_${currentUser.email}`);
+    if (savedUserCoupon) {
+      const parsed = JSON.parse(savedUserCoupon);
+      if (parsed.code === cleanCode) {
+        setDiscountAmount(parsed.discount);
+        setAppliedCoupon(parsed.code);
+        alert(`Success! Exclusive discount of ₹${parsed.discount} applied.`);
+        return;
+      }
+    }
+
     if (cleanCode === 'STYLE200') {
       if (rawTotalPrice < 999) {
-        alert("Coupon STYLE200 is valid on minimum cart value of ₹999");
+        alert("Coupon STYLE200 requires a minimum order value of ₹999.");
         return;
       }
       setDiscountAmount(200);
@@ -258,7 +277,7 @@ function App() {
       setAppliedCoupon('FIRST50');
       alert("Success! ₹50 discount applied.");
     } else {
-      alert("Invalid coupon! Try 'STYLE200' or 'FIRST50'");
+      alert("Invalid coupon code. Spin the Lucky Wheel to get your personal code.");
     }
   };
 
@@ -268,46 +287,23 @@ function App() {
     setCouponCode('');
   };
 
-  // 0.1s Instant Signup Flow
-  const handleRegister = (e) => {
-    e.preventDefault();
-    const cleanEmail = authEmail.toLowerCase().trim();
-    const newUser = {
-      name: authName,
-      email: cleanEmail,
-      phone: authPhone
-    };
+  const handleLoginDirect = (credentials) => {
+    if (credentials.isGoogle) {
+      setCurrentUser(credentials);
+      localStorage.setItem('stylehub_user', JSON.stringify(credentials));
+      localStorage.setItem(`account_${credentials.email}`, JSON.stringify(credentials));
+      setAuthModal(null);
+      fetchUsers();
+      return;
+    }
 
-    // 1. Instant local authentication
-    setCurrentUser(newUser);
-    localStorage.setItem('stylehub_user', JSON.stringify(newUser));
-    localStorage.setItem(`account_${cleanEmail}`, JSON.stringify({ ...newUser, password: authPassword }));
-    setAuthModal(null);
-    alert(`Welcome to StyleHub, ${authName}!`);
-
-    // 2. Background cloud sync
-    axios.post(`${API_BASE_URL}/api/auth/register`, {
-      name: authName,
-      email: cleanEmail,
-      phone: authPhone,
-      password: authPassword
-    }).catch(() => console.log("Background sync done"));
-
-    setAuthName('');
-    setAuthEmail('');
-    setAuthPhone('');
-    setAuthPassword('');
-  };
-
-  // 0.1s Instant Login Flow
-  const handleLogin = (e) => {
-    e.preventDefault();
-    const cleanEmail = authEmail.toLowerCase().trim();
+    const cleanEmail = credentials.email.toLowerCase().trim();
+    const cleanPassword = credentials.password;
 
     const savedAcc = localStorage.getItem(`account_${cleanEmail}`);
     if (savedAcc) {
       const parsed = JSON.parse(savedAcc);
-      if (parsed.password === authPassword) {
+      if (parsed.password === cleanPassword) {
         setCurrentUser(parsed);
         localStorage.setItem('stylehub_user', JSON.stringify(parsed));
         setAuthModal(null);
@@ -318,7 +314,7 @@ function App() {
 
     axios.post(`${API_BASE_URL}/api/auth/login`, {
       email: cleanEmail,
-      password: authPassword
+      password: cleanPassword
     })
     .then((res) => {
       alert(`Welcome back, ${res.data.user.name}!`);
@@ -327,8 +323,41 @@ function App() {
       setAuthModal(null);
     })
     .catch(() => {
-      alert("Account verify nahi hua. Kripya Sign Up karein.");
+      alert("Account credentials not found. Please register via Sign Up.");
     });
+  };
+
+  const handleRegisterDirect = (formData) => {
+    const cleanEmail = formData.email.toLowerCase().trim();
+    const cleanPhone = formData.phone.trim();
+
+    const existingUser = localStorage.getItem(`account_${cleanEmail}`);
+    if (existingUser) {
+      alert("An account with this email address already exists! Please Sign In.");
+      setAuthModal('login');
+      return;
+    }
+
+    const newUser = {
+      name: formData.name,
+      email: cleanEmail,
+      phone: cleanPhone,
+      createdAt: new Date().toLocaleDateString()
+    };
+
+    setCurrentUser(newUser);
+    localStorage.setItem('stylehub_user', JSON.stringify(newUser));
+    localStorage.setItem(`account_${cleanEmail}`, JSON.stringify({ ...newUser, password: formData.password }));
+    setAuthModal(null);
+    fetchUsers();
+    alert(`Account created successfully! Welcome to StyleHub, ${formData.name}.`);
+
+    axios.post(`${API_BASE_URL}/api/auth/register`, {
+      name: formData.name,
+      email: cleanEmail,
+      phone: cleanPhone,
+      password: formData.password
+    }).catch(() => {});
   };
 
   const handleLogout = () => {
@@ -336,26 +365,13 @@ function App() {
     localStorage.removeItem('stylehub_user');
     setCart([]);
     setWishlist([]);
-    alert("Logged out!");
-  };
-
-  const handleAdminLogin = (e) => {
-    e.preventDefault();
-    if (adminPin === ADMIN_SECRET) {
-      setIsAdminLoggedIn(true);
-      setAuthModal(null);
-      setCurrentPage('admin');
-      fetchOrders();
-      setAdminPin('');
-    } else {
-      alert("Galat Admin Key!");
-    }
+    alert("Signed out successfully.");
   };
 
   const handleAddProduct = (e) => {
     e.preventDefault();
     if (!name || !price || !category) {
-      alert("Title, Price aur Category zaroori hai!");
+      alert("Product Title, Price, and Category are required!");
       return;
     }
     const finalImage = image || "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800";
@@ -369,62 +385,55 @@ function App() {
       sizes: ["S", "M", "L", "XL", "XXL"]
     };
 
-    axios.post(`${API_BASE_URL}/api/products`, newProductObj)
-      .then(() => {
-        alert(`Outfit successfully add ho gaya [${category}] me!`);
-        setName('');
-        setPrice('');
-        setDescription('');
-        setImage('');
-        fetchProducts();
-      })
-      .catch(() => {
-        const localAdded = JSON.parse(localStorage.getItem('stylehub_local_products') || '[]');
-        localAdded.push(newProductObj);
-        localStorage.setItem('stylehub_local_products', JSON.stringify(localAdded));
-        alert("Outfit add ho gaya! (Saved locally to catalog).");
-        setName('');
-        setPrice('');
-        setDescription('');
-        setImage('');
-        fetchProducts();
-      });
+    const localAdded = JSON.parse(localStorage.getItem('stylehub_local_products') || '[]');
+    localAdded.push(newProductObj);
+    localStorage.setItem('stylehub_local_products', JSON.stringify(localAdded));
+    setProducts([...defaultCatalog, ...localAdded]);
+    alert("Outfit successfully added to catalog!");
+    setName('');
+    setPrice('');
+    setDescription('');
+    setImage('');
+
+    axios.post(`${API_BASE_URL}/api/products`, newProductObj).catch(() => {});
   };
 
   const handleDeleteProduct = (id) => {
-    if (window.confirm("Delete this outfit?")) {
-      axios.delete(`${API_BASE_URL}/api/products/${id}`)
-        .then(() => fetchProducts())
-        .catch(() => {
-          const localAdded = JSON.parse(localStorage.getItem('stylehub_local_products') || '[]');
-          const updated = localAdded.filter(p => p._id !== id);
-          localStorage.setItem('stylehub_local_products', JSON.stringify(updated));
-          fetchProducts();
-        });
+    if (window.confirm("Are you sure you want to delete this outfit?")) {
+      const localAdded = JSON.parse(localStorage.getItem('stylehub_local_products') || '[]');
+      const updated = localAdded.filter(p => p._id !== id);
+      localStorage.setItem('stylehub_local_products', JSON.stringify(updated));
+      setProducts([...defaultCatalog, ...updated]);
+      axios.delete(`${API_BASE_URL}/api/products/${id}`).catch(() => {});
     }
   };
 
   const handleStatusChange = (orderId, newStatus) => {
-    axios.put(`${API_BASE_URL}/api/orders/${orderId}`, { status: newStatus })
-      .then(() => fetchOrders())
-      .catch(() => {
-        const localOrders = JSON.parse(localStorage.getItem('stylehub_local_orders') || '[]');
-        const updated = localOrders.map(o => o._id === orderId ? { ...o, status: newStatus } : o);
-        localStorage.setItem('stylehub_local_orders', JSON.stringify(updated));
-        fetchOrders();
-      });
+    const localOrders = JSON.parse(localStorage.getItem('stylehub_local_orders') || '[]');
+    const updated = localOrders.map(o => o._id === orderId ? { ...o, status: newStatus } : o);
+    localStorage.setItem('stylehub_local_orders', JSON.stringify(updated));
+    fetchOrders();
+    axios.put(`${API_BASE_URL}/api/orders/${orderId}`, { status: newStatus }).catch(() => {});
   };
 
   const handleDeleteOrder = (orderId) => {
-    if (window.confirm("Delete order record?")) {
-      axios.delete(`${API_BASE_URL}/api/orders/${orderId}`)
-        .then(() => fetchOrders())
-        .catch(() => {
-          const localOrders = JSON.parse(localStorage.getItem('stylehub_local_orders') || '[]');
-          const updated = localOrders.filter(o => o._id !== orderId);
-          localStorage.setItem('stylehub_local_orders', JSON.stringify(updated));
-          fetchOrders();
-        });
+    if (window.confirm("Delete this order record permanently?")) {
+      const localOrders = JSON.parse(localStorage.getItem('stylehub_local_orders') || '[]');
+      const updated = localOrders.filter(o => o._id !== orderId);
+      localStorage.setItem('stylehub_local_orders', JSON.stringify(updated));
+      fetchOrders();
+      axios.delete(`${API_BASE_URL}/api/orders/${orderId}`).catch(() => {});
+    }
+  };
+
+  const handleDeleteUser = (email) => {
+    if (window.confirm(`Delete user account "${email}" permanently?`)) {
+      localStorage.removeItem(`account_${email}`);
+      if (currentUser && currentUser.email === email) {
+        handleLogout();
+      }
+      fetchUsers();
+      alert("User account removed successfully.");
     }
   };
 
@@ -439,7 +448,7 @@ function App() {
   const initiatePaymentGateway = (e) => {
     e.preventDefault();
     if (!customerAddress) {
-      alert("Address daalna zaroori hai!");
+      alert("Delivery address with postal pincode is required.");
       return;
     }
     setOrderSummary({
@@ -459,7 +468,7 @@ function App() {
 
   const sendWhatsAppNotification = (orderData, orderId) => {
     const itemsList = orderData.items.map(it => `• ${it.name} (Size: ${it.selectedSize}) - ₹${it.price}`).join('%0A');
-    const message = `🛍️ *NEW ORDER PLACED!*%0A%0A*Order ID:* ${orderId}%0A*Customer:* ${orderData.customerName}%0A*Phone:* ${orderData.customerPhone}%0A*Address:* ${orderData.customerAddress}%0A%0A*Items Ordered:*%0A${itemsList}%0A%0A*Total Paid:* ₹${orderData.totalAmount}%0A*Payment Method:* ${orderData.paymentMethod}`;
+    const message = `🛍️ *NEW ORDER CONFIRMED!*%0A%0A*Order ID:* ${orderId}%0A*Customer Name:* ${orderData.customerName}%0A*Phone:* ${orderData.customerPhone}%0A*Delivery Address:* ${orderData.customerAddress}%0A%0A*Items Ordered:*%0A${itemsList}%0A%0A*Total Paid:* ₹${orderData.totalAmount}%0A*Payment Method:* ${orderData.paymentMethod}`;
     window.open(`https://wa.me/${SUPPORT_PHONE}?text=${message}`, '_blank');
   };
 
@@ -472,48 +481,34 @@ function App() {
         _id: orderId,
         paymentMethod: methodUsed,
         utrNumber: `AURA-TXN-${Math.floor(100000 + Math.random() * 900000)}`,
-        status: 'Pending',
+        status: 'Processing',
         createdAt: new Date()
       };
 
-      axios.post(`${API_BASE_URL}/api/orders`, orderData)
-        .then((res) => {
-          setIsProcessingPay(false);
-          const finalId = res.data.order?._id || orderId;
-          alert("Payment Success! Order Placed.");
-          sendWhatsAppNotification(orderData, finalId);
-          setCompletedOrder({ ...orderData, _id: finalId });
-          setCart([]);
-          setShowPaymentGateway(false);
-          setCustomerAddress('');
-          setCardNumber('');
-          setCardExpiry('');
-          setCardCvv('');
-          setDiscountAmount(0);
-          setAppliedCoupon('');
-          fetchOrders();
-        })
-        .catch(() => {
-          setIsProcessingPay(false);
-          const localOrders = JSON.parse(localStorage.getItem('stylehub_local_orders') || '[]');
-          localOrders.unshift(orderData);
-          localStorage.setItem('stylehub_local_orders', JSON.stringify(localOrders));
+      setIsProcessingPay(false);
+      const localOrders = JSON.parse(localStorage.getItem('stylehub_local_orders') || '[]');
+      localOrders.unshift(orderData);
+      localStorage.setItem('stylehub_local_orders', JSON.stringify(localOrders));
 
-          alert("Payment Success! Order Placed.");
-          sendWhatsAppNotification(orderData, orderId);
-          setCompletedOrder(orderData);
-          setCart([]);
-          setShowPaymentGateway(false);
-          setCustomerAddress('');
-          setCardNumber('');
-          setCardExpiry('');
-          setCardCvv('');
-          setDiscountAmount(0);
-          setAppliedCoupon('');
-          fetchOrders();
-        });
-    }, 1000);
+      alert("Payment Confirmed! Your order has been placed.");
+      sendWhatsAppNotification(orderData, orderId);
+      setCompletedOrder(orderData);
+      setCart([]);
+      setShowPaymentGateway(false);
+      setCustomerAddress('');
+      setDiscountAmount(0);
+      setAppliedCoupon('');
+      fetchOrders();
+
+      axios.post(`${API_BASE_URL}/api/orders`, orderData).catch(() => {});
+    }, 800);
   };
+
+  const totalRevenue = orders.filter(o => o.status !== 'Cancelled').reduce((sum, o) => sum + (o.totalAmount || 0), 0);
+  const totalOrdersCount = orders.length;
+  const pendingOrdersCount = orders.filter(o => o.status === 'Processing' || o.status === 'Pending').length;
+  const shippedOrdersCount = orders.filter(o => o.status === 'Shipped').length;
+  const cancelledOrdersCount = orders.filter(o => o.status === 'Cancelled').length;
 
   const categoriesList = ['All', 'Oversized Tees', 'Cargo Pants', 'Hoodies & Jackets', 'Casual Shirts'];
 
@@ -535,9 +530,8 @@ function App() {
   });
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', position: 'relative' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', position: 'relative', background: '#050811' }}>
       
-      {/* Background Lights */}
       <div className="bg-ambient-lights">
         <div className="glow-sphere-1"></div>
         <div className="glow-sphere-2"></div>
@@ -545,20 +539,20 @@ function App() {
 
       <div style={{ position: 'relative', zIndex: 1 }}>
         
-        {/* Announcement Bar */}
+        {/* Top Marquee */}
         <div style={{ background: 'linear-gradient(90deg, #ec4899, #8b5cf6, #3b82f6)', padding: '10px 0', overflow: 'hidden', boxShadow: '0 4px 20px rgba(236,72,153,0.3)' }}>
           <div className="marquee-track">
             <div style={{ color: '#ffffff', fontWeight: '900', fontSize: '12px', letterSpacing: '2px', display: 'inline-flex', gap: '35px', marginRight: '35px' }}>
-              <span>SIGN IN & SPIN DAILY LUCKY WHEEL FOR UP TO ₹200 OFF</span>
-              <span>240+ GSM COMBED COTTON OVERSIZED FITS</span>
+              <span>SPIN DAILY LUCKY WHEEL FOR EXCLUSIVE DISCOUNTS</span>
+              <span>240+ GSM COMBED COTTON OVERSIZED STREETWEAR</span>
               <span>FREE PAN-INDIA EXPRESS SHIPPING</span>
-              <span>USE CODE 'STYLE200' FOR FLAT ₹200 OFF</span>
+              <span>LIMITED EDITION 2026 COLOR DROP LIVE</span>
             </div>
           </div>
         </div>
 
-        {/* Navbar */}
-        <header style={{ background: 'rgba(15, 23, 42, 0.92)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255, 255, 255, 0.12)', position: 'sticky', top: 0, zIndex: 100, padding: '16px 40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+        {/* Glass Navbar */}
+        <header style={{ background: 'rgba(10, 15, 30, 0.96)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255, 255, 255, 0.16)', position: 'sticky', top: 0, zIndex: 100, padding: '16px 40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
           
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px', cursor: 'pointer' }} onClick={() => { setCurrentPage('home'); setSelectedCategory('All'); setSearchQuery(''); }}>
             <div style={{ width: '46px', height: '46px', borderRadius: '14px', background: 'linear-gradient(135deg, #f43f5e, #8b5cf6, #06b6d4)', boxShadow: '0 0 25px rgba(244, 63, 94, 0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: '900', fontSize: '20px' }}>
@@ -631,7 +625,7 @@ function App() {
               </div>
             ) : (
               <div style={{ display: 'flex', gap: '8px' }}>
-                <button onClick={() => setAuthModal('login')} style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', padding: '9px 18px', borderRadius: '12px', cursor: 'pointer', fontWeight: '800', fontSize: '12px' }}>Login</button>
+                <button onClick={() => setAuthModal('login')} style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', padding: '9px 18px', borderRadius: '12px', cursor: 'pointer', fontWeight: '800', fontSize: '12px' }}>Sign In</button>
                 <button onClick={() => setAuthModal('register')} className="vibrant-btn" style={{ padding: '9px 20px', borderRadius: '12px', fontSize: '12px' }}>Sign Up</button>
               </div>
             )}
@@ -639,7 +633,7 @@ function App() {
             <div 
               onClick={() => {
                 if (!currentUser) {
-                  alert("Pehle Login karein!");
+                  alert("Please Sign In or Create an Account first.");
                   setAuthModal('login');
                 } else {
                   setIsCartOpen(true);
@@ -655,17 +649,17 @@ function App() {
           </div>
         </header>
 
-        {/* Home & Catalog Content */}
+        {/* Storefront Home & Catalog Content */}
         {(currentPage === 'home' || currentPage === 'shop') && (
           <main style={{ maxWidth: '1280px', margin: '0 auto', padding: '0 20px 60px 20px' }}>
             
-            {/* Banner */}
             {currentPage === 'home' && !searchQuery && (
-              <section className="hyper-card" style={{ margin: '26px 0 50px 0', padding: '50px', display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '30px', alignItems: 'center' }}>
+              <section className="hyper-card" style={{ margin: '26px 0 50px 0', padding: '50px', display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '30px', alignItems: 'center', background: 'rgba(12, 18, 34, 0.92)' }}>
                 <div>
-                  <span style={{ display: 'inline-block', background: 'linear-gradient(90deg, #f43f5e, #8b5cf6)', color: '#fff', padding: '7px 20px', borderRadius: '30px', fontSize: '12px', fontWeight: '900', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '18px', boxShadow: '0 4px 15px rgba(244, 63, 94, 0.4)' }}>
-                    AUTUMN 2026 COLOR DROP
-                  </span>
+                  <div className="opening-intro-badge" style={{ marginBottom: '18px' }}>
+                    <span style={{ fontSize: '14px' }}>🔥</span>
+                    <span style={{ color: '#fff', fontWeight: '900', fontSize: '12px', letterSpacing: '1px' }}>AUTUMN 2026 COLOR DROP LIVE</span>
+                  </div>
 
                   <h1 style={{ fontSize: '50px', fontWeight: '900', margin: '0 0 16px 0', letterSpacing: '-1.2px', lineHeight: '1.1', color: '#ffffff' }}>
                     UNLEASH YOUR <br/>
@@ -698,10 +692,10 @@ function App() {
                 <div style={{ position: 'relative', height: '380px', borderRadius: '24px', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.5)', border: '2px solid rgba(255,255,255,0.2)' }}>
                   <img 
                     src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800" 
-                    alt="Colorful Streetwear Model" 
+                    alt="Streetwear Model" 
                     style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
                   />
-                  <div style={{ position: 'absolute', bottom: '16px', left: '16px', right: '16px', background: 'rgba(15, 23, 42, 0.9)', backdropFilter: 'blur(12px)', padding: '12px 18px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.2)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ position: 'absolute', bottom: '16px', left: '16px', right: '16px', background: 'rgba(10, 15, 30, 0.95)', backdropFilter: 'blur(12px)', padding: '12px 18px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.2)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
                       <div style={{ fontSize: '11px', color: '#f43f5e', fontWeight: '800' }}>FEATURED COLOR DROP</div>
                       <div style={{ fontSize: '15px', fontWeight: '900', color: '#fff' }}>Neon Sunset Oversized Fit</div>
@@ -712,15 +706,15 @@ function App() {
               </section>
             )}
 
-            {/* Collections Matrix */}
+            {/* Curated Categories */}
             {currentPage === 'home' && !searchQuery && (
               <section style={{ marginBottom: '60px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '24px' }}>
                   <div>
-                    <span style={{ fontSize: '12px', fontWeight: '800', color: '#f43f5e', letterSpacing: '2px', textTransform: 'uppercase' }}>COLLECTIONS MATRIX</span>
-                    <h2 style={{ fontSize: '32px', fontWeight: '900', color: '#ffffff', margin: '4px 0 0 0' }}>Explore By Category</h2>
+                    <span className="section-tagline-vivid">COLLECTIONS MATRIX</span>
+                    <h2 className="section-headline-glow" style={{ margin: '4px 0 0 0' }}>Explore By Category</h2>
                   </div>
-                  <span onClick={() => setCurrentPage('categories')} style={{ fontSize: '14px', fontWeight: '800', color: '#f43f5e', cursor: 'pointer', background: 'rgba(244,63,94,0.1)', padding: '6px 14px', borderRadius: '10px' }}>
+                  <span onClick={() => setCurrentPage('categories')} style={{ fontSize: '14px', fontWeight: '800', color: '#f43f5e', cursor: 'pointer', background: 'rgba(244,63,94,0.15)', border: '1px solid rgba(244,63,94,0.3)', padding: '8px 16px', borderRadius: '12px' }}>
                     View All Collections →
                   </span>
                 </div>
@@ -734,7 +728,7 @@ function App() {
                       style={{ height: '340px' }}
                     >
                       <img src={c.image} alt={c.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: 'linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(8,12,22,0.95) 90%)' }}></div>
+                      <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: 'linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(6,10,22,0.96) 90%)' }}></div>
                       
                       <div style={{ position: 'absolute', top: '16px', left: '16px', fontWeight: '800', fontSize: '11px', color: '#fff', background: 'linear-gradient(135deg, #f43f5e, #8b5cf6)', padding: '6px 14px', borderRadius: '10px' }}>
                         {c.tag}
@@ -759,39 +753,29 @@ function App() {
             <section>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '22px', flexWrap: 'wrap', gap: '12px' }}>
                 <div>
-                  <span style={{ fontSize: '12px', fontWeight: '800', color: '#f43f5e', letterSpacing: '2px', textTransform: 'uppercase' }}>
+                  <span className="section-tagline-vivid">
                     {searchQuery ? `SEARCH RESULTS` : 'FRESH STREETWEAR DROPS'}
                   </span>
-                  <h2 style={{ fontSize: '30px', fontWeight: '900', color: '#ffffff', margin: '4px 0 0 0' }}>
+                  <h2 className="section-headline-glow" style={{ margin: '4px 0 0 0' }}>
                     {searchQuery ? `"${searchQuery}" (${filteredProducts.length})` : selectedCategory === 'All' ? 'All Vibrant Drops' : selectedCategory}
                   </h2>
                 </div>
                 {(selectedCategory !== 'All' || searchQuery) && (
-                  <button onClick={() => { setSelectedCategory('All'); setSearchQuery(''); }} style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.25)', color: '#fff', padding: '9px 18px', borderRadius: '12px', cursor: 'pointer', fontWeight: '800', fontSize: '13px' }}>
+                  <button onClick={() => { setSelectedCategory('All'); setSearchQuery(''); }} style={{ background: 'rgba(255,255,255,0.15)', border: '1.5px solid rgba(255,255,255,0.3)', color: '#fff', padding: '9px 18px', borderRadius: '12px', cursor: 'pointer', fontWeight: '800', fontSize: '13px' }}>
                     Reset Filters ✕
                   </button>
                 )}
               </div>
 
-              {/* Filter Buttons */}
-              <div style={{ display: 'flex', gap: '10px', marginBottom: '32px', flexWrap: 'wrap' }}>
+              {/* Filter Pills */}
+              <div style={{ display: 'flex', gap: '12px', marginBottom: '32px', flexWrap: 'wrap' }}>
                 {categoriesList.map((cat) => (
                   <button
                     key={cat}
                     onClick={() => { setSelectedCategory(cat); setSearchQuery(''); }}
-                    style={{
-                      padding: '11px 24px',
-                      borderRadius: '14px',
-                      border: '1px solid',
-                      borderColor: selectedCategory === cat ? '#f43f5e' : 'rgba(255,255,255,0.15)',
-                      background: selectedCategory === cat ? 'linear-gradient(135deg, #f43f5e, #8b5cf6)' : 'rgba(255,255,255,0.06)',
-                      color: '#fff',
-                      cursor: 'pointer',
-                      fontWeight: '800',
-                      fontSize: '13px'
-                    }}
+                    className={`filter-pill-btn ${selectedCategory === cat ? 'active' : 'inactive'}`}
                   >
-                    {cat}
+                    {cat === 'All' ? '✨ All Fits' : cat === 'Oversized Tees' ? '👕 Oversized Tees' : cat === 'Cargo Pants' ? '👖 Cargo Pants' : cat === 'Hoodies & Jackets' ? '🧥 Hoodies & Jackets' : '👔 Casual Shirts'}
                   </button>
                 ))}
               </div>
@@ -820,20 +804,20 @@ function App() {
                         <div style={{ position: 'relative', overflow: 'hidden', height: '340px' }}>
                           <img src={item.image} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                           
-                          <span style={{ position: 'absolute', top: '16px', left: '16px', background: 'rgba(15, 23, 42, 0.9)', backdropFilter: 'blur(8px)', color: '#38bdf8', fontSize: '11px', padding: '6px 14px', borderRadius: '10px', fontWeight: '800', border: '1px solid rgba(255,255,255,0.15)' }}>
+                          <span style={{ position: 'absolute', top: '16px', left: '16px', background: 'rgba(10, 15, 30, 0.95)', backdropFilter: 'blur(8px)', color: '#38bdf8', fontSize: '11px', padding: '6px 14px', borderRadius: '10px', fontWeight: '800', border: '1px solid rgba(255,255,255,0.15)' }}>
                             {item.category || 'Streetwear'}
                           </span>
 
                           <button 
                             onClick={(e) => { e.stopPropagation(); toggleWishlist(item); }} 
-                            style={{ position: 'absolute', top: '16px', right: '16px', background: 'rgba(15, 23, 42, 0.9)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.2)', width: '38px', height: '38px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '16px' }}
+                            style={{ position: 'absolute', top: '16px', right: '16px', background: 'rgba(10, 15, 30, 0.95)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.2)', width: '38px', height: '38px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '16px' }}
                           >
                             {isWishlisted ? '❤️' : '🤍'}
                           </button>
 
                           <button 
                             onClick={() => setQuickViewProduct(item)} 
-                            style={{ position: 'absolute', bottom: '14px', right: '14px', background: 'rgba(15, 23, 42, 0.9)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.2)', padding: '7px 14px', borderRadius: '10px', fontSize: '11px', fontWeight: '800', color: '#fff', cursor: 'pointer' }}
+                            style={{ position: 'absolute', bottom: '14px', right: '14px', background: 'rgba(10, 15, 30, 0.95)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.2)', padding: '7px 14px', borderRadius: '10px', fontSize: '11px', fontWeight: '800', color: '#fff', cursor: 'pointer' }}
                           >
                             👁️ Quick View
                           </button>
@@ -900,23 +884,69 @@ function App() {
           </main>
         )}
 
-        {/* Lucky Wheel Modal */}
+        {/* Casino Lucky Wheel Modal */}
         {showLuckySpin && (
-          <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.88)', backdropFilter: 'blur(16px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1200 }}>
-            <div className="hyper-card" style={{ width: '92%', maxWidth: '440px', padding: '36px 24px', textAlign: 'center', background: '#0f172a' }}>
+          <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.92)', backdropFilter: 'blur(20px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1200 }}>
+            <div className="hyper-card" style={{ width: '92%', maxWidth: '440px', padding: '36px 20px', textAlign: 'center', background: '#0a0f1d' }}>
               
-              <h3 style={{ fontSize: '24px', fontWeight: '900', color: '#fff', margin: '0 0 6px 0' }}>🎡 Daily Lucky Spin Wheel</h3>
-              <p style={{ fontSize: '13px', color: '#cbd5e1', marginBottom: '22px' }}>
-                Signed in as <b>{currentUser?.name}</b> (1 Spin / Day)
+              <h3 className="section-headline-glow" style={{ fontSize: '24px', margin: '0 0 4px 0' }}>🎡 Daily Lucky Spin Wheel</h3>
+              <p style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '22px' }}>
+                Signed in as <b style={{ color: '#38bdf8' }}>{currentUser?.name}</b> (1 Spin / Day)
               </p>
 
-              <div className="wheel-wrapper">
-                <div className="wheel-pointer"></div>
+              <div className="wheel-outer-container">
+                <div className="wheel-top-pointer"></div>
+                
+                <div className="wheel-golden-rim">
+                  <svg 
+                    viewBox="0 0 300 300" 
+                    className="wheel-svg-disc"
+                    style={{ transform: `rotate(${wheelRotation}deg)` }}
+                  >
+                    {wheelSlices.map((slice, i) => {
+                      const angle = 360 / 8;
+                      const startAngle = i * angle;
+                      const endAngle = startAngle + angle;
+                      const startRad = (startAngle - 90) * Math.PI / 180;
+                      const endRad = (endAngle - 90) * Math.PI / 180;
+                      const x1 = 150 + 150 * Math.cos(startRad);
+                      const y1 = 150 + 150 * Math.sin(startRad);
+                      const x2 = 150 + 150 * Math.cos(endRad);
+                      const y2 = 150 + 150 * Math.sin(endRad);
+                      const textAngle = startAngle + angle / 2;
+
+                      return (
+                        <g key={i}>
+                          <path 
+                            d={`M150,150 L${x1},${y1} A150,150 0 0,1 ${x2},${y2} Z`} 
+                            fill={slice.bg} 
+                            stroke="#ffffff" 
+                            strokeWidth="2"
+                          />
+                          <text 
+                            x="150" 
+                            y="48" 
+                            fill="#ffffff" 
+                            fontSize="13" 
+                            fontWeight="900" 
+                            letterSpacing="0.5"
+                            textAnchor="middle" 
+                            transform={`rotate(${textAngle}, 150, 150)`}
+                            style={{ textShadow: '0 2px 4px rgba(0,0,0,0.8)' }}
+                          >
+                            {slice.label}
+                          </text>
+                        </g>
+                      );
+                    })}
+                  </svg>
+                </div>
+
                 <div 
-                  className="wheel-disc"
-                  style={{ transform: `rotate(${wheelRotation}deg)` }}
+                  className="wheel-center-button"
+                  onClick={!isSpinning && !spinReward ? triggerAnimatedSpin : undefined}
                 >
-                  <div className="wheel-center-pin">SPIN</div>
+                  {isSpinning ? '...' : 'SPIN'}
                 </div>
               </div>
 
@@ -931,7 +961,7 @@ function App() {
                   className="vibrant-btn" 
                   style={{ width: '100%', padding: '15px', borderRadius: '14px', fontSize: '15px', letterSpacing: '1px' }}
                 >
-                  {isSpinning ? '🎡 SPINNING THE WHEEL...' : '🎯 TAP TO SPIN NOW'}
+                  {isSpinning ? '🎡 SPINNING WHEEL...' : '🎯 TAP TO SPIN NOW'}
                 </button>
               )}
 
@@ -943,11 +973,11 @@ function App() {
         {/* Wishlist View */}
         {currentPage === 'wishlist' && (
           <main style={{ maxWidth: '1260px', margin: '30px auto', padding: '0 20px 60px 20px' }}>
-            <h2 style={{ fontSize: '30px', fontWeight: '900', color: '#fff', marginBottom: '24px' }}>Saved Wishlist ({wishlist.length})</h2>
+            <h2 className="section-headline-glow" style={{ marginBottom: '24px' }}>Saved Wishlist ({wishlist.length})</h2>
             {wishlist.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '90px 20px', background: 'rgba(255,255,255,0.05)', borderRadius: '24px', color: '#cbd5e1' }}>
-                <p>Wishlist empty hai. Heart icon click karke save karein!</p>
-                <button onClick={() => setCurrentPage('shop')} className="vibrant-btn" style={{ marginTop: '14px', padding: '12px 24px', borderRadius: '12px' }}>Explore Outfits</button>
+                <p>Your wishlist is currently empty.</p>
+                <button onClick={() => setCurrentPage('shop')} className="vibrant-btn" style={{ marginTop: '14px', padding: '12px 24px', borderRadius: '12px' }}>Explore Catalog</button>
               </div>
             ) : (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(270px, 1fr))', gap: '26px' }}>
@@ -970,10 +1000,10 @@ function App() {
         {/* My Orders View */}
         {currentPage === 'myOrders' && currentUser && (
           <main style={{ maxWidth: '900px', margin: '30px auto', padding: '0 20px 60px 20px' }}>
-            <h2 style={{ fontSize: '30px', fontWeight: '900', color: '#fff', marginBottom: '24px' }}>My Orders History</h2>
+            <h2 className="section-headline-glow" style={{ marginBottom: '24px' }}>My Orders History</h2>
             {userOrders.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '90px 20px', background: 'rgba(255,255,255,0.05)', borderRadius: '24px', color: '#cbd5e1' }}>
-                <p>Aapne abhi tak koi order place nahi kiya hai.</p>
+                <p>No orders placed yet.</p>
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
@@ -984,7 +1014,7 @@ function App() {
                         <div style={{ fontSize: '12px', color: '#cbd5e1' }}>Order ID: <b style={{ color: '#fff' }}>{ord._id}</b></div>
                         <div style={{ fontSize: '12px', color: '#cbd5e1' }}>Date: {new Date(ord.createdAt).toLocaleDateString()}</div>
                       </div>
-                      <div style={{ background: ord.status === 'Delivered' ? 'rgba(34, 197, 94, 0.25)' : ord.status === 'Shipped' ? 'rgba(99, 102, 241, 0.25)' : 'rgba(234, 179, 8, 0.25)', color: ord.status === 'Delivered' ? '#4ade80' : ord.status === 'Shipped' ? '#a5b4fc' : '#facc15', border: '1px solid currentColor', padding: '6px 16px', borderRadius: '30px', fontWeight: '800', fontSize: '12px' }}>
+                      <div style={{ background: ord.status === 'Delivered' ? 'rgba(34, 197, 94, 0.25)' : ord.status === 'Cancelled' ? 'rgba(239, 68, 68, 0.25)' : ord.status === 'Shipped' ? 'rgba(99, 102, 241, 0.25)' : 'rgba(234, 179, 8, 0.25)', color: ord.status === 'Delivered' ? '#4ade80' : ord.status === 'Cancelled' ? '#ef4444' : ord.status === 'Shipped' ? '#a5b4fc' : '#facc15', border: '1px solid currentColor', padding: '6px 16px', borderRadius: '30px', fontWeight: '800', fontSize: '12px' }}>
                         ● Status: {ord.status || 'Processing'}
                       </div>
                     </div>
@@ -1011,12 +1041,12 @@ function App() {
         {/* Collections View */}
         {currentPage === 'categories' && (
           <main style={{ maxWidth: '1260px', margin: '30px auto', padding: '0 20px 60px 20px' }}>
-            <h2 style={{ fontSize: '32px', fontWeight: '900', color: '#fff', marginBottom: '26px' }}>All Streetwear Collections</h2>
+            <h2 className="section-headline-glow" style={{ marginBottom: '26px' }}>All Streetwear Collections</h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(270px, 1fr))', gap: '26px' }}>
               {categoryCards.map((c, i) => (
                 <div key={i} onClick={() => { setSelectedCategory(c.category); setCurrentPage('shop'); }} className="hyper-card" style={{ height: '340px' }}>
                   <img src={c.image} alt={c.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: 'linear-gradient(180deg, transparent 30%, rgba(8,12,22,0.95) 100%)' }}></div>
+                  <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: 'linear-gradient(180deg, transparent 30%, rgba(6,10,22,0.96) 100%)' }}></div>
                   <div style={{ position: 'absolute', bottom: '22px', left: '22px', right: '22px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div style={{ color: '#fff', fontSize: '22px', fontWeight: '900' }}>{c.title}</div>
                     <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: '#fff', color: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>↗</div>
@@ -1027,57 +1057,148 @@ function App() {
           </main>
         )}
 
-        {/* Admin Panel */}
+        {/* Master Admin Panel */}
         {currentPage === 'admin' && isAdminLoggedIn && (
-          <div style={{ maxWidth: '1200px', margin: '30px auto', padding: '0 20px 60px 20px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.15)', paddingBottom: '18px' }}>
-              <h2 style={{ fontSize: '26px', margin: 0, fontWeight: '900', color: '#fff' }}>Admin Dashboard</h2>
-              <div style={{ display: 'flex', gap: '10px' }}>
-                <button onClick={() => setAdminTab('orders')} style={{ padding: '10px 20px', borderRadius: '12px', border: 'none', cursor: 'pointer', fontWeight: '800', background: adminTab === 'orders' ? '#f43f5e' : 'rgba(255,255,255,0.15)', color: '#fff' }}>Orders ({orders.length})</button>
-                <button onClick={() => setAdminTab('products')} style={{ padding: '10px 20px', borderRadius: '12px', border: 'none', cursor: 'pointer', fontWeight: '800', background: adminTab === 'products' ? '#f43f5e' : 'rgba(255,255,255,0.15)', color: '#fff' }}>Catalog ({products.length})</button>
+          <div style={{ maxWidth: '1280px', margin: '30px auto', padding: '0 20px 60px 20px' }}>
+            
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.18)', paddingBottom: '22px', flexWrap: 'wrap', gap: '16px', background: 'rgba(10, 16, 32, 0.96)', padding: '24px', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.12)' }}>
+              <div>
+                <h2 className="section-headline-glow" style={{ fontSize: '32px', margin: 0, color: '#ffffff' }}>
+                  ⚡ Master Control Dashboard
+                </h2>
+                <div style={{ fontSize: '13px', color: '#38bdf8', fontWeight: '700', marginTop: '4px' }}>
+                  Realtime Store Control, Orders, Users & Live Analytics
+                </div>
+              </div>
+              
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                <button onClick={() => setAdminTab('analytics')} style={{ padding: '10px 18px', borderRadius: '12px', border: 'none', cursor: 'pointer', fontWeight: '800', background: adminTab === 'analytics' ? 'linear-gradient(135deg, #f43f5e, #8b5cf6)' : 'rgba(255,255,255,0.15)', color: '#fff' }}>📊 Analytics</button>
+                <button onClick={() => setAdminTab('orders')} style={{ padding: '10px 18px', borderRadius: '12px', border: 'none', cursor: 'pointer', fontWeight: '800', background: adminTab === 'orders' ? 'linear-gradient(135deg, #f43f5e, #8b5cf6)' : 'rgba(255,255,255,0.15)', color: '#fff' }}>📦 Orders ({orders.length})</button>
+                <button onClick={() => setAdminTab('users')} style={{ padding: '10px 18px', borderRadius: '12px', border: 'none', cursor: 'pointer', fontWeight: '800', background: adminTab === 'users' ? 'linear-gradient(135deg, #f43f5e, #8b5cf6)' : 'rgba(255,255,255,0.15)', color: '#fff' }}>👥 Users ({usersList.length})</button>
+                <button onClick={() => setAdminTab('products')} style={{ padding: '10px 18px', borderRadius: '12px', border: 'none', cursor: 'pointer', fontWeight: '800', background: adminTab === 'products' ? 'linear-gradient(135deg, #f43f5e, #8b5cf6)' : 'rgba(255,255,255,0.15)', color: '#fff' }}>👕 Catalog ({products.length})</button>
                 <button onClick={() => { setIsAdminLoggedIn(false); setCurrentPage('home'); }} style={{ background: '#ef4444', color: '#fff', border: 'none', padding: '10px 18px', borderRadius: '12px', cursor: 'pointer', fontWeight: '800' }}>Exit Admin</button>
               </div>
             </div>
 
-            {adminTab === 'orders' ? (
+            {/* TAB 1: ANALYTICS */}
+            {adminTab === 'analytics' && (
               <div style={{ marginTop: '26px' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', background: 'rgba(15,23,42,0.85)', borderRadius: '18px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.15)' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px', marginBottom: '30px' }}>
+                  <div className="hyper-card" style={{ padding: '26px' }}>
+                    <div style={{ fontSize: '12px', fontWeight: '800', color: '#cbd5e1', letterSpacing: '1px' }}>TOTAL REVENUE</div>
+                    <div style={{ fontSize: '36px', fontWeight: '900', color: '#4ade80', marginTop: '6px' }}>₹{totalRevenue}</div>
+                    <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '4px' }}>Confirmed Sales</div>
+                  </div>
+
+                  <div className="hyper-card" style={{ padding: '26px' }}>
+                    <div style={{ fontSize: '12px', fontWeight: '800', color: '#cbd5e1', letterSpacing: '1px' }}>TOTAL SITE VISITS</div>
+                    <div style={{ fontSize: '36px', fontWeight: '900', color: '#38bdf8', marginTop: '6px' }}>{siteVisits}</div>
+                    <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '4px' }}>Traffic Hits</div>
+                  </div>
+
+                  <div className="hyper-card" style={{ padding: '26px' }}>
+                    <div style={{ fontSize: '12px', fontWeight: '800', color: '#cbd5e1', letterSpacing: '1px' }}>REGISTERED USERS</div>
+                    <div style={{ fontSize: '36px', fontWeight: '900', color: '#facc15', marginTop: '6px' }}>{usersList.length}</div>
+                    <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '4px' }}>Signed Up Members</div>
+                  </div>
+
+                  <div className="hyper-card" style={{ padding: '26px' }}>
+                    <div style={{ fontSize: '12px', fontWeight: '800', color: '#cbd5e1', letterSpacing: '1px' }}>TOTAL ORDERS PLACED</div>
+                    <div style={{ fontSize: '36px', fontWeight: '900', color: '#ec4899', marginTop: '6px' }}>{totalOrdersCount}</div>
+                    <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '4px' }}>{pendingOrdersCount} Pending / {shippedOrdersCount} Shipped</div>
+                  </div>
+
+                  <div className="hyper-card" style={{ padding: '26px' }}>
+                    <div style={{ fontSize: '12px', fontWeight: '800', color: '#cbd5e1', letterSpacing: '1px' }}>CANCELLED ORDERS</div>
+                    <div style={{ fontSize: '36px', fontWeight: '900', color: '#ef4444', marginTop: '6px' }}>{cancelledOrdersCount}</div>
+                    <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '4px' }}>Revoked Orders</div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 2: USERS */}
+            {adminTab === 'users' && (
+              <div style={{ marginTop: '26px' }}>
+                <h3 className="section-headline-glow" style={{ fontSize: '24px', margin: '0 0 16px 0' }}>Registered User Accounts ({usersList.length})</h3>
+                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', background: 'rgba(10, 16, 32, 0.96)', borderRadius: '18px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.15)' }}>
                   <thead>
                     <tr style={{ background: 'rgba(255,255,255,0.1)' }}>
-                      <th style={{ padding: '14px' }}>Customer</th>
-                      <th style={{ padding: '14px' }}>Items</th>
-                      <th style={{ padding: '14px' }}>Total</th>
-                      <th style={{ padding: '14px' }}>Payment</th>
-                      <th style={{ padding: '14px' }}>Status</th>
-                      <th style={{ padding: '14px' }}>Action</th>
+                      <th style={{ padding: '14px', color: '#fff' }}>Full Name</th>
+                      <th style={{ padding: '14px', color: '#fff' }}>Email Address</th>
+                      <th style={{ padding: '14px', color: '#fff' }}>Phone Number</th>
+                      <th style={{ padding: '14px', color: '#fff' }}>Joined Date</th>
+                      <th style={{ padding: '14px', color: '#fff' }}>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {usersList.length === 0 ? (
+                      <tr>
+                        <td colSpan="5" style={{ padding: '20px', textAlign: 'center', color: '#cbd5e1' }}>No users registered yet.</td>
+                      </tr>
+                    ) : (
+                      usersList.map((u, i) => (
+                        <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                          <td style={{ padding: '14px', fontWeight: 'bold', color: '#fff' }}>{u.name}</td>
+                          <td style={{ padding: '14px', color: '#38bdf8' }}>{u.email}</td>
+                          <td style={{ padding: '14px', color: '#cbd5e1' }}>{u.phone || 'N/A'}</td>
+                          <td style={{ padding: '14px', color: '#94a3b8' }}>{u.createdAt || 'Active'}</td>
+                          <td style={{ padding: '14px' }}>
+                            <button onClick={() => handleDeleteUser(u.email)} style={{ background: '#ef4444', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>Remove User</button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* TAB 3: ORDERS */}
+            {adminTab === 'orders' && (
+              <div style={{ marginTop: '26px' }}>
+                <h3 className="section-headline-glow" style={{ fontSize: '24px', margin: '0 0 16px 0' }}>Customer Orders ({orders.length})</h3>
+                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', background: 'rgba(10, 16, 32, 0.96)', borderRadius: '18px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.15)' }}>
+                  <thead>
+                    <tr style={{ background: 'rgba(255,255,255,0.1)' }}>
+                      <th style={{ padding: '14px', color: '#fff' }}>Customer</th>
+                      <th style={{ padding: '14px', color: '#fff' }}>Items</th>
+                      <th style={{ padding: '14px', color: '#fff' }}>Total Amount</th>
+                      <th style={{ padding: '14px', color: '#fff' }}>Payment Method</th>
+                      <th style={{ padding: '14px', color: '#fff' }}>Order Status</th>
+                      <th style={{ padding: '14px', color: '#fff' }}>Action</th>
                     </tr>
                   </thead>
                   <tbody>
                     {orders.map((o) => (
                       <tr key={o._id} style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-                        <td style={{ padding: '14px' }}><b>{o.customerName}</b><br/>{o.customerPhone}<br/><small style={{ color: '#cbd5e1' }}>{o.customerAddress}</small></td>
-                        <td style={{ padding: '14px' }}>{o.items && o.items.map((it, idx) => (<div key={idx}>• {it.name} ({it.selectedSize})</div>))}</td>
-                        <td style={{ padding: '14px', color: '#4ade80', fontWeight: '800' }}>₹{o.totalAmount}</td>
-                        <td style={{ padding: '14px' }}><small style={{ color: '#38bdf8' }}>{o.paymentMethod}</small></td>
+                        <td style={{ padding: '14px' }}><b style={{ color: '#fff' }}>{o.customerName}</b><br/><span style={{ color: '#38bdf8' }}>{o.customerPhone}</span><br/><small style={{ color: '#cbd5e1' }}>{o.customerAddress}</small></td>
+                        <td style={{ padding: '14px', color: '#cbd5e1' }}>{o.items && o.items.map((it, idx) => (<div key={idx}>• {it.name} ({it.selectedSize})</div>))}</td>
+                        <td style={{ padding: '14px', color: '#4ade80', fontWeight: '900', fontSize: '16px' }}>₹{o.totalAmount}</td>
+                        <td style={{ padding: '14px' }}><small style={{ color: '#facc15', fontWeight: 'bold' }}>{o.paymentMethod}</small></td>
                         <td style={{ padding: '14px' }}>
-                          <select value={o.status} onChange={(e) => handleStatusChange(o._id, e.target.value)} style={{ padding: '6px', background: '#0f172a', color: '#fff', border: '1px solid #f43f5e', borderRadius: '6px' }}>
-                            <option value="Pending">Pending</option>
+                          <select value={o.status} onChange={(e) => handleStatusChange(o._id, e.target.value)} style={{ padding: '8px', background: '#0f172a', color: '#fff', border: '1px solid #f43f5e', borderRadius: '8px', fontWeight: 'bold' }}>
+                            <option value="Processing">Processing</option>
                             <option value="Shipped">Shipped</option>
                             <option value="Delivered">Delivered</option>
+                            <option value="Cancelled">Cancelled</option>
                           </select>
                         </td>
                         <td style={{ padding: '14px' }}>
-                          <button onClick={() => handleDeleteOrder(o._id)} style={{ background: '#ef4444', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '8px', cursor: 'pointer' }}>Delete</button>
+                          <button onClick={() => handleDeleteOrder(o._id)} style={{ background: '#ef4444', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>Delete</button>
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-            ) : (
+            )}
+
+            {/* TAB 4: PRODUCT CATALOG */}
+            {adminTab === 'products' && (
               <div style={{ marginTop: '26px' }}>
                 <form onSubmit={handleAddProduct} className="hyper-card" style={{ padding: '26px', marginBottom: '26px' }}>
-                  <h3 style={{ margin: '0 0 18px 0', color: '#fff' }}>Add New Outfit</h3>
+                  <h3 className="section-headline-glow" style={{ fontSize: '24px', margin: '0 0 18px 0' }}>Add New Outfit</h3>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                     <input type="text" placeholder="Title *" value={name} onChange={(e) => setName(e.target.value)} required style={{ padding: '12px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.4)', color: '#fff' }} />
                     <input type="number" placeholder="Price (₹) *" value={price} onChange={(e) => setPrice(e.target.value)} required style={{ padding: '12px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.4)', color: '#fff' }} />
@@ -1093,14 +1214,14 @@ function App() {
                   <button type="submit" className="vibrant-btn" style={{ marginTop: '16px', padding: '12px 26px', borderRadius: '10px' }}>+ Save Outfit</button>
                 </form>
 
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', background: 'rgba(15,23,42,0.85)', borderRadius: '18px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.15)' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', background: 'rgba(10, 16, 32, 0.96)', borderRadius: '18px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.15)' }}>
                   <thead>
                     <tr style={{ background: 'rgba(255,255,255,0.1)' }}>
-                      <th style={{ padding: '12px' }}>Image</th>
-                      <th style={{ padding: '12px' }}>Name</th>
-                      <th style={{ padding: '12px' }}>Category</th>
-                      <th style={{ padding: '12px' }}>Price</th>
-                      <th style={{ padding: '12px' }}>Action</th>
+                      <th style={{ padding: '12px', color: '#fff' }}>Image</th>
+                      <th style={{ padding: '12px', color: '#fff' }}>Name</th>
+                      <th style={{ padding: '12px', color: '#fff' }}>Category</th>
+                      <th style={{ padding: '12px', color: '#fff' }}>Price</th>
+                      <th style={{ padding: '12px', color: '#fff' }}>Action</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1122,7 +1243,7 @@ function App() {
       </div>
 
       {/* Footer */}
-      <footer style={{ background: 'rgba(8, 12, 22, 0.95)', color: '#cbd5e1', padding: '60px 40px 25px 40px', borderTop: '1px solid rgba(255,255,255,0.15)', position: 'relative', zIndex: 1 }}>
+      <footer style={{ background: 'rgba(8, 12, 22, 0.98)', color: '#cbd5e1', padding: '60px 40px 25px 40px', borderTop: '1px solid rgba(255,255,255,0.15)', position: 'relative', zIndex: 1 }}>
         <div style={{ maxWidth: '1280px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '40px', paddingBottom: '40px', borderBottom: '1px solid rgba(255,255,255,0.15)' }}>
           <div>
             <div style={{ fontSize: '22px', fontWeight: '900', marginBottom: '14px', color: '#fff' }}>
@@ -1153,8 +1274,8 @@ function App() {
 
           <div>
             <div style={{ fontSize: '14px', fontWeight: '800', color: '#fff', textTransform: 'uppercase', marginBottom: '14px' }}>VIP Drop Alerts</div>
-            <p style={{ fontSize: '13px', color: '#94a3b8', margin: '0 0 12px 0' }}>Subscribe to get color drop alerts & flat ₹200 discount codes.</p>
-            <form onSubmit={(e) => { e.preventDefault(); alert("Subscribed to VIP drops!"); setNewsletterEmail(''); }} style={{ display: 'flex', gap: '8px' }}>
+            <p style={{ fontSize: '13px', color: '#94a3b8', margin: '0 0 12px 0' }}>Subscribe to get color drop alerts & exclusive personalized discounts.</p>
+            <form onSubmit={(e) => { e.preventDefault(); alert("Subscribed to VIP drop alerts!"); setNewsletterEmail(''); }} style={{ display: 'flex', gap: '8px' }}>
               <input 
                 type="email" 
                 placeholder="Your email address" 
@@ -1170,13 +1291,13 @@ function App() {
 
         <div style={{ maxWidth: '1280px', margin: '20px auto 0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', color: '#94a3b8', flexWrap: 'wrap', gap: '10px' }}>
           <div>© 2026 My Style Hub Studio. Founder: <b>{OWNER_NAME}</b></div>
-          <div>Crafted with ❤️ for India's Youth Fashion Culture</div>
+          <div>Crafted for Modern Streetwear Culture</div>
         </div>
       </footer>
 
-      {/* WhatsApp Support Trigger */}
+      {/* WhatsApp Trigger */}
       <a 
-        href={`https://wa.me/${SUPPORT_PHONE}?text=${encodeURIComponent('Hi My Style Hub! Mujhe ek outfit ke baare me inquiry karni hai.')}`}
+        href={`https://wa.me/${SUPPORT_PHONE}?text=${encodeURIComponent('Hi My Style Hub! I would like to inquire about an outfit.')}`}
         target="_blank" 
         rel="noopener noreferrer"
         style={{
@@ -1253,56 +1374,25 @@ function App() {
         </div>
       )}
 
-      {/* Auth Modal */}
+      {/* UNIVERSAL LAMP AUTH MODAL */}
       {authModal && (
-        <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(12px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1200 }}>
-          <div className="hyper-card" style={{ width: '90%', maxWidth: '400px', padding: '34px', background: '#0f172a' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <h3 style={{ margin: 0, fontSize: '20px', fontWeight: '900', color: '#fff' }}>
-                {authModal === 'login' ? 'User Login' : authModal === 'register' ? 'Join StyleHub (Sign Up)' : 'Admin Passcode'}
-              </h3>
-              <button onClick={() => setAuthModal(null)} style={{ background: 'none', border: 'none', color: '#cbd5e1', fontSize: '18px', cursor: 'pointer', fontWeight: 'bold' }}>✕</button>
-            </div>
-
-            {authModal === 'register' && (
-              <form onSubmit={handleRegister}>
-                <input type="text" placeholder="Full Name" value={authName} onChange={(e) => setAuthName(e.target.value)} required style={{ width: '100%', padding: '12px 16px', marginBottom: '12px', boxSizing: 'border-box', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.4)', color: '#fff', fontSize: '13px' }} />
-                <input type="email" placeholder="Email Address" value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} required style={{ width: '100%', padding: '12px 16px', marginBottom: '12px', boxSizing: 'border-box', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.4)', color: '#fff', fontSize: '13px' }} />
-                <input type="tel" placeholder="Phone Number" value={authPhone} onChange={(e) => setAuthPhone(e.target.value)} required style={{ width: '100%', padding: '12px 16px', marginBottom: '12px', boxSizing: 'border-box', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.4)', color: '#fff', fontSize: '13px' }} />
-                <input type="password" placeholder="Password" value={authPassword} onChange={(e) => setAuthPassword(e.target.value)} required style={{ width: '100%', padding: '12px 16px', marginBottom: '18px', boxSizing: 'border-box', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.4)', color: '#fff', fontSize: '13px' }} />
-                <button type="submit" className="vibrant-btn" style={{ width: '100%', padding: '13px', borderRadius: '12px' }}>Create Account</button>
-                <div style={{ textAlign: 'center', marginTop: '12px', fontSize: '12px', color: '#cbd5e1' }}>
-                  Already have an account? <span onClick={() => setAuthModal('login')} style={{ color: '#38bdf8', cursor: 'pointer', fontWeight: 'bold' }}>Login here</span>
-                </div>
-              </form>
-            )}
-
-            {authModal === 'login' && (
-              <form onSubmit={handleLogin}>
-                <input type="email" placeholder="Email Address" value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} required style={{ width: '100%', padding: '12px 16px', marginBottom: '12px', boxSizing: 'border-box', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.4)', color: '#fff', fontSize: '13px' }} />
-                <input type="password" placeholder="Password" value={authPassword} onChange={(e) => setAuthPassword(e.target.value)} required style={{ width: '100%', padding: '12px 16px', marginBottom: '18px', boxSizing: 'border-box', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.4)', color: '#fff', fontSize: '13px' }} />
-                <button type="submit" className="vibrant-btn" style={{ width: '100%', padding: '13px', borderRadius: '12px' }}>Sign In</button>
-                <div style={{ textAlign: 'center', marginTop: '12px', fontSize: '12px', color: '#cbd5e1' }}>
-                  Naya account banana hai? <span onClick={() => setAuthModal('register')} style={{ color: '#f43f5e', cursor: 'pointer', fontWeight: 'bold' }}>Sign Up yahan karein</span>
-                </div>
-              </form>
-            )}
-
-            {authModal === 'adminLogin' && (
-              <form onSubmit={handleAdminLogin}>
-                <input 
-                  type="password" 
-                  placeholder="Enter Secret Key" 
-                  value={adminPin} 
-                  onChange={(e) => setAdminPin(e.target.value)} 
-                  required 
-                  style={{ width: '100%', padding: '12px 16px', marginBottom: '18px', boxSizing: 'border-box', borderRadius: '12px', border: '1px solid #f43f5e', background: 'rgba(0,0,0,0.4)', color: '#fff', fontSize: '13px' }} 
-                />
-                <button type="submit" className="vibrant-btn" style={{ width: '100%', padding: '13px', borderRadius: '12px' }}>Unlock Admin Panel</button>
-              </form>
-            )}
-          </div>
-        </div>
+        <LampLogin 
+          mode={authModal === 'adminLogin' ? 'admin' : authModal}
+          onClose={() => setAuthModal(null)}
+          onLoginSuccess={handleLoginDirect}
+          onRegisterSuccess={handleRegisterDirect}
+          onAdminSuccess={(enteredPin) => {
+            if (enteredPin === ADMIN_SECRET) {
+              setIsAdminLoggedIn(true);
+              setAuthModal(null);
+              setCurrentPage('admin');
+              fetchOrders();
+              fetchUsers();
+            } else {
+              alert("Invalid Admin Passcode!");
+            }
+          }}
+        />
       )}
 
       {/* Cart Drawer */}
@@ -1331,7 +1421,7 @@ function App() {
                   ))}
 
                   <div style={{ background: 'rgba(255,255,255,0.08)', padding: '14px', borderRadius: '14px', border: '1px dashed rgba(255,255,255,0.2)', marginTop: '18px' }}>
-                    <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#cbd5e1', marginBottom: '8px' }}>PROMO CODE: (Use: STYLE200)</div>
+                    <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#cbd5e1', marginBottom: '8px' }}>PROMO CODE: (Use: STYLE200 or Spin Code)</div>
                     <div style={{ display: 'flex', gap: '8px' }}>
                       <input 
                         type="text" 
@@ -1370,7 +1460,7 @@ function App() {
                     <div style={{ fontSize: '12px', marginBottom: '8px', color: '#cbd5e1' }}>
                       Customer: <b style={{ color: '#fff' }}>{currentUser.name}</b> ({currentUser.phone})
                     </div>
-                    <textarea placeholder="Delivery Address with Pincode *" value={customerAddress} onChange={(e) => setCustomerAddress(e.target.value)} style={{ width: '100%', padding: '12px', marginBottom: '14px', boxSizing: 'border-box', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.4)', color: '#fff', fontSize: '13px' }} rows="2" required />
+                    <textarea placeholder="Delivery Address with Postal Pincode *" value={customerAddress} onChange={(e) => setCustomerAddress(e.target.value)} style={{ width: '100%', padding: '12px', marginBottom: '14px', boxSizing: 'border-box', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.4)', color: '#fff', fontSize: '13px' }} rows="2" required />
                     <button type="submit" className="vibrant-btn" style={{ width: '100%', padding: '14px', borderRadius: '12px', fontSize: '14px' }}>
                       Proceed to Pay ₹{finalPayablePrice} ⚡
                     </button>
@@ -1424,7 +1514,7 @@ function App() {
                 
                 {paymentTab === 'upi' && (
                   <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: '14px', fontWeight: '800', color: '#fff', marginBottom: '4px' }}>Pay to: {ACCOUNT_HOLDER}</div>
+                    <div style={{ fontSize: '14px', fontWeight: '800', color: '#fff', marginBottom: '4px' }}>Beneficiary: {ACCOUNT_HOLDER}</div>
                     <div style={{ fontSize: '12px', color: '#f43f5e', marginBottom: '18px' }}>UPI ID: <b>{UPI_ID}</b></div>
 
                     {!showQrCode ? (
@@ -1490,7 +1580,7 @@ function App() {
         </div>
       )}
 
-      {/* Invoice Modal */}
+      {/* Receipt Modal */}
       {completedOrder && (
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(12px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1300 }}>
           <div style={{ background: '#fff', color: '#0f172a', width: '90%', maxWidth: '500px', padding: '32px', borderRadius: '24px', boxShadow: '0 25px 60px rgba(0,0,0,0.4)' }}>

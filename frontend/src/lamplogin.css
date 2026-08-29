@@ -1,0 +1,421 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap');
+
+/* Modal Full-Screen Backdrop */
+.lamp-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  overflow: hidden;
+  transition: background 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.lamp-modal-backdrop.light-on {
+  background: radial-gradient(circle at 40% 45%, #24221a 0%, #08090f 85%);
+}
+
+.lamp-modal-backdrop.light-off {
+  background: radial-gradient(circle at 40% 50%, #0d0f17 0%, #040508 100%);
+}
+
+/* Close Icon Button */
+.lamp-close-x {
+  position: absolute;
+  top: 24px;
+  right: 28px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  font-size: 18px;
+  font-weight: 900;
+  cursor: pointer;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.lamp-close-x:hover {
+  background: #f43f5e;
+  transform: scale(1.1) rotate(90deg);
+}
+
+/* Sparkles */
+.lamp-sparkles {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.sp {
+  position: absolute;
+  color: #facc15;
+  opacity: 0;
+  transition: opacity 0.8s ease;
+}
+
+.light-on .sp {
+  opacity: 0.85;
+  animation: floatSparkle 4s infinite ease-in-out alternate;
+}
+
+.sp1 { top: 18%; left: 22%; font-size: 20px; }
+.sp2 { top: 38%; left: 42%; font-size: 15px; animation-delay: 1s; }
+.sp3 { top: 68%; left: 18%; font-size: 24px; animation-delay: 2s; }
+.sp4 { top: 28%; right: 18%; font-size: 18px; animation-delay: 1.5s; }
+.sp5 { top: 76%; right: 28%; font-size: 22px; animation-delay: 0.5s; }
+
+@keyframes floatSparkle {
+  0% { transform: translateY(0) scale(0.8); }
+  100% { transform: translateY(-16px) scale(1.2); }
+}
+
+/* Stage Grid */
+.lamp-interactive-stage {
+  display: grid;
+  grid-template-columns: 320px 440px;
+  align-items: center;
+  gap: 40px;
+  max-width: 960px;
+  width: 90%;
+  position: relative;
+  z-index: 10;
+}
+
+/* --- 3D LAMP --- */
+.lamp-assembly {
+  position: relative;
+  width: 300px;
+  height: 500px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.lamp-dome {
+  position: absolute;
+  top: 60px;
+  width: 200px;
+  height: 85px;
+  background: linear-gradient(180deg, #374151 0%, #111827 100%);
+  border-radius: 110px 110px 10px 10px;
+  box-shadow: inset 0 3px 8px rgba(255,255,255,0.25), 0 15px 35px rgba(0,0,0,0.9);
+  z-index: 30;
+}
+
+.dome-cap {
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 24px;
+  height: 10px;
+  background: #facc15;
+  border-radius: 6px;
+}
+
+/* Pull String */
+.lamp-pull-string {
+  position: absolute;
+  right: 28px;
+  top: 75px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  z-index: 40;
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.lamp-pull-string.pulled {
+  transform: translateY(26px);
+}
+
+.string-line {
+  width: 2px;
+  height: 50px;
+  background: #f8fafc;
+  box-shadow: 0 0 5px rgba(0,0,0,0.8);
+}
+
+.string-knob {
+  width: 12px;
+  height: 22px;
+  background: linear-gradient(135deg, #facc15 0%, #d97706 100%);
+  border-radius: 8px;
+  border: 1.5px solid #ffffff;
+  box-shadow: 0 0 12px rgba(250, 204, 21, 0.8), 0 4px 10px rgba(0,0,0,0.6);
+}
+
+/* Bulb & Glow */
+.lamp-bulb-source {
+  position: absolute;
+  top: 135px;
+  width: 160px;
+  height: 14px;
+  background: #334155;
+  border-radius: 50%;
+  transition: all 0.4s ease;
+  z-index: 25;
+}
+
+.lamp-bulb-source.active-glow {
+  background: #fffbeb;
+  box-shadow: 0 0 40px #facc15, 0 0 80px #fbbf24;
+}
+
+/* Light Cone */
+.lamp-beam-cone {
+  position: absolute;
+  top: 138px;
+  width: 440px;
+  height: 380px;
+  clip-path: polygon(36% 0%, 64% 0%, 100% 100%, 0% 100%);
+  background: linear-gradient(180deg, rgba(250, 204, 21, 0.55) 0%, rgba(245, 158, 11, 0.12) 65%, transparent 100%);
+  pointer-events: none;
+  z-index: 15;
+  opacity: 0;
+  transform: scaleY(0.7);
+  transform-origin: top;
+  transition: opacity 0.5s ease, transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  filter: blur(12px);
+}
+
+.lamp-beam-cone.beam-visible {
+  opacity: 1;
+  transform: scaleY(1);
+}
+
+.lamp-stand-rod {
+  width: 8px;
+  height: 370px;
+  background: linear-gradient(90deg, #475569 0%, #1e293b 100%);
+  border-radius: 4px;
+  z-index: 20;
+}
+
+.lamp-stand-base {
+  width: 140px;
+  height: 18px;
+  background: linear-gradient(180deg, #334155 0%, #0f172a 100%);
+  border-radius: 12px 12px 4px 4px;
+  box-shadow: 0 12px 30px rgba(0,0,0,0.95);
+  z-index: 20;
+}
+
+/* --- AUTH CARD --- */
+.lamp-auth-card {
+  background: rgba(17, 24, 39, 0.92);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1.5px solid rgba(255, 255, 255, 0.16);
+  border-radius: 28px;
+  padding: 34px 30px;
+  box-shadow: 0 25px 60px rgba(0,0,0,0.7);
+  transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.lamp-auth-card.card-dimmed {
+  opacity: 0.35;
+  transform: scale(0.97) translateX(10px);
+  filter: blur(3px) brightness(0.5);
+  pointer-events: none;
+}
+
+.lamp-auth-card.card-bright {
+  opacity: 1;
+  transform: scale(1) translateX(0);
+  filter: blur(0px) brightness(1);
+  border-color: rgba(250, 204, 21, 0.45);
+  box-shadow: 0 0 40px rgba(250, 204, 21, 0.2), 0 25px 60px rgba(0,0,0,0.85);
+}
+
+.card-top-title h2 {
+  font-size: 26px;
+  font-weight: 900;
+  color: #ffffff;
+  margin-bottom: 4px;
+  letter-spacing: -0.5px;
+}
+
+.card-top-title p {
+  color: #94a3b8;
+  font-size: 12px;
+  margin-bottom: 18px;
+}
+
+/* Input Fields */
+.lamp-field-box {
+  display: flex;
+  align-items: center;
+  background: rgba(10, 15, 28, 0.85);
+  border: 1.5px solid rgba(255, 255, 255, 0.16);
+  border-radius: 14px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  transition: border-color 0.3s ease;
+}
+
+.lamp-field-box:focus-within {
+  border-color: #facc15;
+  box-shadow: 0 0 15px rgba(250, 204, 21, 0.3);
+}
+
+.field-icon {
+  font-size: 15px;
+  margin-right: 10px;
+}
+
+.lamp-field-box input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.lamp-field-box input::placeholder {
+  color: #64748b;
+}
+
+.lamp-auth-options {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  color: #94a3b8;
+  margin-bottom: 16px;
+}
+
+.lamp-auth-options input[type="checkbox"] {
+  accent-color: #facc15;
+  margin-right: 6px;
+}
+
+.forgot-pass-btn {
+  color: #facc15;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+/* Buttons */
+.lamp-submit-gold-btn {
+  width: 100%;
+  padding: 13px;
+  border-radius: 14px;
+  border: none;
+  background: linear-gradient(135deg, #facc15 0%, #f59e0b 100%);
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4);
+  transition: all 0.3s ease;
+}
+
+.lamp-submit-gold-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(245, 158, 11, 0.6);
+}
+
+.lamp-auth-divider {
+  text-align: center;
+  position: relative;
+  margin: 16px 0 12px 0;
+}
+
+.lamp-auth-divider span {
+  font-size: 10px;
+  font-weight: 900;
+  color: #64748b;
+  letter-spacing: 1.5px;
+}
+
+.lamp-social-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.social-pill-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+  padding: 9px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+}
+
+.social-pill-btn:hover {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: #facc15;
+}
+
+.switch-auth-link {
+  text-align: center;
+  font-size: 12px;
+  color: #94a3b8;
+  margin-top: 16px;
+}
+
+.switch-auth-link span {
+  color: #facc15;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.lamp-switch-hint {
+  position: absolute;
+  bottom: 20px;
+  background: rgba(15, 23, 42, 0.92);
+  border: 1px solid rgba(250, 204, 21, 0.4);
+  color: #fef08a;
+  padding: 8px 18px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 800;
+  box-shadow: 0 0 20px rgba(0,0,0,0.8);
+  animation: bounceHint 2s infinite ease-in-out;
+}
+
+@keyframes bounceHint {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+@media (max-width: 820px) {
+  .lamp-interactive-stage {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  .lamp-assembly {
+    height: 260px;
+  }
+  .lamp-stand-rod {
+    height: 150px;
+  }
+}

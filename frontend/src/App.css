@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@600;700;800;900&display=swap');
 
 * {
   margin: 0;
@@ -9,61 +9,109 @@
 }
 
 body {
-  background-color: #080c16;
-  color: #f8fafc;
+  background-color: #050811 !important;
+  color: #ffffff !important;
   overflow-x: hidden;
   position: relative;
+  min-height: 100vh;
 }
 
-/* Ambient Floating Lights */
-.bg-ambient-lights {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  overflow: hidden;
-  z-index: 0;
-  pointer-events: none;
+/* CINEMATIC SITE OPENING WELCOME BANNER (PAGE LOAD ANIMATION) */
+.opening-intro-badge {
+  background: linear-gradient(135deg, rgba(244,63,94,0.2) 0%, rgba(139,92,246,0.2) 100%);
+  border: 1px solid rgba(244,63,94,0.4);
+  padding: 8px 22px;
+  border-radius: 30px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  animation: pulseIntro 2.5s ease-in-out infinite;
+  box-shadow: 0 0 25px rgba(244, 63, 94, 0.3);
 }
 
-.glow-sphere-1 {
-  position: absolute;
-  top: 5%;
-  left: -5%;
-  width: 500px;
-  height: 500px;
-  background: radial-gradient(circle, rgba(236, 72, 153, 0.25) 0%, transparent 70%);
-  border-radius: 50%;
-  animation: floatAmbient 16s ease-in-out infinite alternate;
+@keyframes pulseIntro {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 25px rgba(244,63,94,0.3); }
+  50% { transform: scale(1.05); box-shadow: 0 0 35px rgba(139,92,246,0.6); }
 }
 
-.glow-sphere-2 {
-  position: absolute;
-  top: 45%;
-  right: -5%;
-  width: 600px;
-  height: 600px;
-  background: radial-gradient(circle, rgba(139, 92, 246, 0.25) 0%, transparent 70%);
-  border-radius: 50%;
-  animation: floatAmbient2 20s ease-in-out infinite alternate;
+/* HIGH-CONTRAST ANIMATED TITLES (BILKUL CLEAR & FLOATING) */
+.section-headline-glow {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 36px;
+  font-weight: 900;
+  color: #ffffff !important;
+  letter-spacing: -0.5px;
+  display: inline-block;
+  animation: headingFloat 3.8s ease-in-out infinite;
+  text-shadow: 0 4px 15px rgba(0,0,0,0.9), 0 0 30px rgba(244, 63, 94, 0.45);
 }
 
-@keyframes floatAmbient {
-  0% { transform: translate(0, 0); }
-  100% { transform: translate(120px, 140px); }
+@keyframes headingFloat {
+  0%, 100% {
+    transform: translateY(0px);
+    text-shadow: 0 4px 15px rgba(0,0,0,0.9), 0 0 25px rgba(244, 63, 94, 0.4);
+  }
+  50% {
+    transform: translateY(-6px);
+    text-shadow: 0 8px 25px rgba(0,0,0,1), 0 0 40px rgba(139, 92, 246, 0.7);
+  }
 }
 
-@keyframes floatAmbient2 {
-  0% { transform: translate(0, 0); }
-  100% { transform: translate(-140px, -100px); }
+.section-tagline-vivid {
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: #f43f5e !important;
+  background: rgba(244, 63, 94, 0.15);
+  padding: 4px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(244, 63, 94, 0.3);
+  display: inline-block;
+  margin-bottom: 6px;
 }
 
-/* 3D HOVER CARD */
+/* GLOWING FILTER PILLS (100% VISIBLE ON ALL SCREENS) */
+.filter-pill-btn {
+  padding: 12px 24px;
+  border-radius: 16px;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filter-pill-btn.active {
+  background: linear-gradient(135deg, #f43f5e 0%, #8b5cf6 100%) !important;
+  color: #ffffff !important;
+  border: 1.5px solid #ffffff !important;
+  box-shadow: 0 0 25px rgba(244, 63, 94, 0.6), 0 4px 15px rgba(0,0,0,0.4);
+  transform: translateY(-2px) scale(1.05);
+}
+
+.filter-pill-btn.inactive {
+  background: rgba(26, 35, 58, 0.95) !important;
+  color: #cbd5e1 !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.22) !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+}
+
+.filter-pill-btn.inactive:hover {
+  background: rgba(38, 49, 78, 1) !important;
+  color: #ffffff !important;
+  border-color: #f43f5e !important;
+  transform: translateY(-3px);
+}
+
+/* 3D HYPER CARDS & HOVER */
 .hyper-card {
-  background: rgba(18, 24, 38, 0.85);
+  background: rgba(14, 20, 36, 0.95);
   backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1.5px solid rgba(255, 255, 255, 0.16);
   border-radius: 26px;
   overflow: hidden;
   transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s ease, border-color 0.4s ease;
@@ -71,26 +119,27 @@ body {
 }
 
 .hyper-card:hover {
-  transform: translateY(-8px) scale(1.02);
-  border-color: #ec4899;
-  box-shadow: 0 25px 50px -10px rgba(236, 72, 153, 0.35);
+  transform: translateY(-10px) scale(1.025);
+  border-color: #f43f5e;
+  box-shadow: 0 25px 50px -10px rgba(244, 63, 94, 0.4), 0 0 30px rgba(139, 92, 246, 0.3);
 }
 
 .hyper-card img {
-  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), filter 0.4s ease;
 }
 
 .hyper-card:hover img {
   transform: scale(1.08);
+  filter: brightness(1.08);
 }
 
-/* VIBRANT BUTTON */
+/* VIBRANT ACTION BUTTONS */
 .vibrant-btn {
   background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 50%, #3b82f6 100%);
   background-size: 200% 200%;
-  color: #ffffff;
+  color: #ffffff !important;
   border: none;
-  font-weight: 800;
+  font-weight: 900;
   cursor: pointer;
   transition: all 0.3s ease;
   box-shadow: 0 8px 25px rgba(236, 72, 153, 0.4);
@@ -98,7 +147,7 @@ body {
 
 .vibrant-btn:hover {
   background-position: right center;
-  transform: translateY(-2px) scale(1.03);
+  transform: translateY(-3px) scale(1.04);
   box-shadow: 0 12px 30px rgba(139, 92, 246, 0.6);
 }
 
@@ -114,66 +163,75 @@ body {
   100% { transform: translateX(-50%); }
 }
 
-/* SPINNING WHEEL ANIMATIONS */
-.wheel-wrapper {
+/* CASINO LUCKY WHEEL */
+.wheel-outer-container {
   position: relative;
-  width: 280px;
-  height: 280px;
+  width: 320px;
+  height: 320px;
   margin: 0 auto 20px auto;
-  border-radius: 50%;
-  box-shadow: 0 0 35px rgba(236, 72, 153, 0.6), inset 0 0 15px rgba(0,0,0,0.5);
-  border: 6px solid #ffffff;
-}
-
-.wheel-disc {
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  background: conic-gradient(
-    #ef4444 0deg 45deg,
-    #f59e0b 45deg 90deg,
-    #10b981 90deg 135deg,
-    #06b6d4 135deg 180deg,
-    #3b82f6 180deg 225deg,
-    #8b5cf6 225deg 270deg,
-    #ec4899 270deg 315deg,
-    #f43f5e 315deg 360deg
-  );
-  transition: transform 4s cubic-bezier(0.15, 0.9, 0.25, 1);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.wheel-pointer {
+.wheel-golden-rim {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  padding: 8px;
+  background: conic-gradient(
+    #facc15, #f59e0b, #fbbf24, #d97706,
+    #facc15, #f59e0b, #fbbf24, #d97706
+  );
+  box-shadow: 0 0 35px rgba(245, 158, 11, 0.6), 0 0 15px rgba(236, 72, 153, 0.4);
+  position: relative;
+}
+
+.wheel-svg-disc {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  transition: transform 4.5s cubic-bezier(0.12, 0.95, 0.22, 1);
+  box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.6);
+}
+
+.wheel-top-pointer {
   position: absolute;
-  top: -16px;
+  top: -12px;
   left: 50%;
   transform: translateX(-50%);
   width: 0;
   height: 0;
-  border-left: 14px solid transparent;
-  border-right: 14px solid transparent;
-  border-top: 24px solid #facc15;
-  z-index: 10;
-  filter: drop-shadow(0 2px 5px rgba(0,0,0,0.6));
+  border-left: 16px solid transparent;
+  border-right: 16px solid transparent;
+  border-top: 30px solid #facc15;
+  z-index: 20;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.7));
 }
 
-.wheel-center-pin {
+.wheel-center-button {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 54px;
-  height: 54px;
-  background: #0f172a;
-  border: 4px solid #facc15;
+  width: 66px;
+  height: 66px;
+  background: radial-gradient(circle, #facc15 0%, #d97706 100%);
+  border: 4px solid #ffffff;
   border-radius: 50%;
-  color: #fff;
-  font-size: 11px;
+  color: #0f172a;
+  font-size: 13px;
   font-weight: 900;
+  letter-spacing: 0.5px;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 0 12px rgba(0,0,0,0.8);
+  cursor: pointer;
+  z-index: 15;
+  box-shadow: 0 0 18px rgba(0, 0, 0, 0.8), 0 0 12px rgba(250, 204, 21, 0.8);
+  transition: transform 0.2s ease;
+}
+
+.wheel-center-button:hover {
+  transform: translate(-50%, -50%) scale(1.08);
 }
