@@ -16,51 +16,65 @@ body {
   min-height: 100vh;
 }
 
-/* CINEMATIC SITE OPENING WELCOME BANNER (PAGE LOAD ANIMATION) */
-.opening-intro-badge {
-  background: linear-gradient(135deg, rgba(244,63,94,0.2) 0%, rgba(139,92,246,0.2) 100%);
-  border: 1px solid rgba(244,63,94,0.4);
-  padding: 8px 22px;
-  border-radius: 30px;
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  animation: pulseIntro 2.5s ease-in-out infinite;
-  box-shadow: 0 0 25px rgba(244, 63, 94, 0.3);
+/* Background Ambient Lights */
+.bg-ambient-lights {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  z-index: 0;
+  pointer-events: none;
 }
 
-@keyframes pulseIntro {
-  0%, 100% { transform: scale(1); box-shadow: 0 0 25px rgba(244,63,94,0.3); }
-  50% { transform: scale(1.05); box-shadow: 0 0 35px rgba(139,92,246,0.6); }
+.glow-sphere-1 {
+  position: absolute;
+  top: -5%;
+  left: -5%;
+  width: 550px;
+  height: 550px;
+  background: radial-gradient(circle, rgba(236, 72, 153, 0.25) 0%, transparent 70%);
+  border-radius: 50%;
+  animation: floatAmbient 14s ease-in-out infinite alternate;
 }
 
-/* HIGH-CONTRAST ANIMATED TITLES (BILKUL CLEAR & FLOATING) */
+.glow-sphere-2 {
+  position: absolute;
+  top: 40%;
+  right: -5%;
+  width: 650px;
+  height: 650px;
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.25) 0%, transparent 70%);
+  border-radius: 50%;
+  animation: floatAmbient2 18s ease-in-out infinite alternate;
+}
+
+@keyframes floatAmbient {
+  0% { transform: translate(0, 0); }
+  100% { transform: translate(100px, 90px); }
+}
+
+@keyframes floatAmbient2 {
+  0% { transform: translate(0, 0); }
+  100% { transform: translate(-100px, -90px); }
+}
+
+/* Section Headings */
 .section-headline-glow {
   font-family: 'Space Grotesk', sans-serif;
-  font-size: 36px;
+  font-size: 34px;
   font-weight: 900;
   color: #ffffff !important;
   letter-spacing: -0.5px;
   display: inline-block;
-  animation: headingFloat 3.8s ease-in-out infinite;
-  text-shadow: 0 4px 15px rgba(0,0,0,0.9), 0 0 30px rgba(244, 63, 94, 0.45);
-}
-
-@keyframes headingFloat {
-  0%, 100% {
-    transform: translateY(0px);
-    text-shadow: 0 4px 15px rgba(0,0,0,0.9), 0 0 25px rgba(244, 63, 94, 0.4);
-  }
-  50% {
-    transform: translateY(-6px);
-    text-shadow: 0 8px 25px rgba(0,0,0,1), 0 0 40px rgba(139, 92, 246, 0.7);
-  }
+  text-shadow: 0 4px 15px rgba(0,0,0,0.9), 0 0 25px rgba(244, 63, 94, 0.4);
 }
 
 .section-tagline-vivid {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 900;
-  letter-spacing: 2.5px;
+  letter-spacing: 2px;
   text-transform: uppercase;
   color: #f43f5e !important;
   background: rgba(244, 63, 94, 0.15);
@@ -71,72 +85,61 @@ body {
   margin-bottom: 6px;
 }
 
-/* GLOWING FILTER PILLS (100% VISIBLE ON ALL SCREENS) */
+/* Filter Pills */
 .filter-pill-btn {
-  padding: 12px 24px;
-  border-radius: 16px;
-  font-size: 14px;
+  padding: 11px 22px;
+  border-radius: 14px;
+  font-size: 13px;
   font-weight: 800;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.3s ease;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .filter-pill-btn.active {
   background: linear-gradient(135deg, #f43f5e 0%, #8b5cf6 100%) !important;
   color: #ffffff !important;
   border: 1.5px solid #ffffff !important;
-  box-shadow: 0 0 25px rgba(244, 63, 94, 0.6), 0 4px 15px rgba(0,0,0,0.4);
-  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 0 20px rgba(244, 63, 94, 0.5);
 }
 
 .filter-pill-btn.inactive {
   background: rgba(26, 35, 58, 0.95) !important;
   color: #cbd5e1 !important;
-  border: 1.5px solid rgba(255, 255, 255, 0.22) !important;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  border: 1.5px solid rgba(255, 255, 255, 0.2) !important;
 }
 
-.filter-pill-btn.inactive:hover {
-  background: rgba(38, 49, 78, 1) !important;
-  color: #ffffff !important;
-  border-color: #f43f5e !important;
-  transform: translateY(-3px);
-}
-
-/* 3D HYPER CARDS & HOVER */
+/* 3D Hyper Cards */
 .hyper-card {
   background: rgba(14, 20, 36, 0.95);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1.5px solid rgba(255, 255, 255, 0.16);
-  border-radius: 26px;
+  border-radius: 24px;
   overflow: hidden;
-  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s ease, border-color 0.4s ease;
+  transition: transform 0.4s ease, box-shadow 0.4s ease;
   position: relative;
 }
 
 .hyper-card:hover {
-  transform: translateY(-10px) scale(1.025);
+  transform: translateY(-8px);
   border-color: #f43f5e;
-  box-shadow: 0 25px 50px -10px rgba(244, 63, 94, 0.4), 0 0 30px rgba(139, 92, 246, 0.3);
+  box-shadow: 0 20px 45px rgba(244, 63, 94, 0.35);
 }
 
 .hyper-card img {
-  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), filter 0.4s ease;
+  transition: transform 0.6s ease;
 }
 
 .hyper-card:hover img {
-  transform: scale(1.08);
-  filter: brightness(1.08);
+  transform: scale(1.06);
 }
 
-/* VIBRANT ACTION BUTTONS */
+/* Vibrant Button */
 .vibrant-btn {
   background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 50%, #3b82f6 100%);
-  background-size: 200% 200%;
   color: #ffffff !important;
   border: none;
   font-weight: 900;
@@ -146,12 +149,11 @@ body {
 }
 
 .vibrant-btn:hover {
-  background-position: right center;
-  transform: translateY(-3px) scale(1.04);
+  transform: translateY(-2px);
   box-shadow: 0 12px 30px rgba(139, 92, 246, 0.6);
 }
 
-/* RUNNING MARQUEE */
+/* Marquee */
 .marquee-track {
   display: inline-flex;
   animation: marqueeRoll 20s linear infinite;
@@ -163,11 +165,11 @@ body {
   100% { transform: translateX(-50%); }
 }
 
-/* CASINO LUCKY WHEEL */
+/* Lucky Wheel */
 .wheel-outer-container {
   position: relative;
-  width: 320px;
-  height: 320px;
+  width: 300px;
+  height: 300px;
   margin: 0 auto 20px auto;
   display: flex;
   align-items: center;
@@ -179,11 +181,8 @@ body {
   height: 100%;
   border-radius: 50%;
   padding: 8px;
-  background: conic-gradient(
-    #facc15, #f59e0b, #fbbf24, #d97706,
-    #facc15, #f59e0b, #fbbf24, #d97706
-  );
-  box-shadow: 0 0 35px rgba(245, 158, 11, 0.6), 0 0 15px rgba(236, 72, 153, 0.4);
+  background: conic-gradient(#facc15, #f59e0b, #fbbf24, #d97706, #facc15, #f59e0b);
+  box-shadow: 0 0 35px rgba(245, 158, 11, 0.6);
   position: relative;
 }
 
@@ -192,7 +191,6 @@ body {
   height: 100%;
   border-radius: 50%;
   transition: transform 4.5s cubic-bezier(0.12, 0.95, 0.22, 1);
-  box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.6);
 }
 
 .wheel-top-pointer {
@@ -202,11 +200,10 @@ body {
   transform: translateX(-50%);
   width: 0;
   height: 0;
-  border-left: 16px solid transparent;
-  border-right: 16px solid transparent;
-  border-top: 30px solid #facc15;
+  border-left: 14px solid transparent;
+  border-right: 14px solid transparent;
+  border-top: 26px solid #facc15;
   z-index: 20;
-  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.7));
 }
 
 .wheel-center-button {
@@ -214,24 +211,145 @@ body {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 66px;
-  height: 66px;
+  width: 60px;
+  height: 60px;
   background: radial-gradient(circle, #facc15 0%, #d97706 100%);
   border: 4px solid #ffffff;
   border-radius: 50%;
   color: #0f172a;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 900;
-  letter-spacing: 0.5px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   z-index: 15;
-  box-shadow: 0 0 18px rgba(0, 0, 0, 0.8), 0 0 12px rgba(250, 204, 21, 0.8);
-  transition: transform 0.2s ease;
 }
 
-.wheel-center-button:hover {
-  transform: translate(-50%, -50%) scale(1.08);
+/* APP-LIKE BOTTOM BAR FOR MOBILE SCREENS */
+.mobile-bottom-navbar {
+  display: none;
+}
+
+/* ========================================================= */
+/* --- DEDICATED PHONE & MOBILE RESPONSIVENESS (< 768px) --- */
+/* ========================================================= */
+@media (max-width: 768px) {
+  
+  /* Compact Top Header */
+  .desktop-navbar-nav,
+  .desktop-auth-buttons {
+    display: none !important;
+  }
+
+  header {
+    padding: 12px 16px !important;
+    gap: 10px !important;
+    justify-content: space-between !important;
+  }
+
+  .header-brand-box {
+    gap: 8px !important;
+  }
+
+  .header-brand-title {
+    font-size: 18px !important;
+  }
+
+  .header-search-box {
+    order: 3;
+    max-width: 100% !important;
+    flex: 1 1 100% !important;
+    margin-top: 6px;
+  }
+
+  .header-search-box input {
+    padding: 10px 14px 10px 38px !important;
+    font-size: 12px !important;
+  }
+
+  /* Hero Section on Phone */
+  .hero-banner-grid {
+    grid-template-columns: 1fr !important;
+    padding: 24px 18px !important;
+    margin: 16px 0 30px 0 !important;
+    gap: 20px !important;
+  }
+
+  .hero-banner-grid h1 {
+    font-size: 32px !important;
+    line-height: 1.15 !important;
+  }
+
+  .hero-banner-grid p {
+    font-size: 13px !important;
+    margin-bottom: 20px !important;
+  }
+
+  .hero-banner-grid .vibrant-btn {
+    padding: 12px 24px !important;
+    font-size: 13px !important;
+  }
+
+  .section-headline-glow {
+    font-size: 22px !important;
+  }
+
+  .filter-pill-btn {
+    padding: 8px 14px !important;
+    font-size: 11px !important;
+    border-radius: 10px !important;
+  }
+
+  /* Product Grid spacing on Phone */
+  main {
+    padding: 0 14px 90px 14px !important; /* Bottom padding so bottom nav doesn't overlap */
+  }
+
+  /* Footer on Phone */
+  footer {
+    padding: 30px 16px 100px 16px !important;
+  }
+
+  /* Fixed Mobile Bottom Navigation Bar (App Experience) */
+  .mobile-bottom-navbar {
+    display: flex !important;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100vw;
+    height: 64px;
+    background: rgba(10, 15, 30, 0.98);
+    backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(255, 255, 255, 0.16);
+    z-index: 1100;
+    justify-content: space-around;
+    align-items: center;
+    padding: 0 8px;
+    box-shadow: 0 -4px 25px rgba(0, 0, 0, 0.7);
+  }
+
+  .mobile-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #94a3b8;
+    font-size: 10px;
+    font-weight: 800;
+    cursor: pointer;
+    gap: 3px;
+    background: none;
+    border: none;
+    padding: 4px;
+    flex: 1;
+  }
+
+  .mobile-nav-item.active {
+    color: #f43f5e;
+  }
+
+  .mobile-nav-item span.icon {
+    font-size: 18px;
+  }
 }
