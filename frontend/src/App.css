@@ -60,7 +60,88 @@ body {
   100% { transform: translate(-100px, -90px); }
 }
 
-/* Section Headings */
+/* ROYAL GOLD EMBLEM LOGO */
+.brand-logo-emblem {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  overflow: hidden;
+  box-shadow: 0 0 20px rgba(250, 204, 21, 0.45), 0 0 10px rgba(244, 63, 94, 0.3);
+  border: 1.5px solid rgba(250, 204, 21, 0.6);
+  background: #000000;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  flex-shrink: 0;
+}
+
+.brand-logo-emblem:hover {
+  transform: scale(1.1) rotate(4deg);
+  box-shadow: 0 0 30px rgba(250, 204, 21, 0.8);
+}
+
+.brand-logo-emblem img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* MOVING COLOR WAVE FOR "ROYAL TUXEDO FIT" */
+.animated-tuxedo-fit {
+  background: linear-gradient(
+    90deg, 
+    #f43f5e 0%, 
+    #fb923c 20%, 
+    #facc15 40%, 
+    #4ade80 60%, 
+    #38bdf8 80%, 
+    #c084fc 90%, 
+    #f43f5e 100%
+  );
+  background-size: 300% 300%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: colorWaveRoll 3.5s ease-in-out infinite alternate, textSlightFloat 2.5s ease-in-out infinite;
+  display: inline-block;
+  font-weight: 900;
+  letter-spacing: -0.5px;
+}
+
+@keyframes colorWaveRoll {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 100% 50%; }
+}
+
+@keyframes textSlightFloat {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-4px); }
+}
+
+/* 3D FLOATING HERO SUIT IMAGE */
+.hero-suit-floating-box {
+  position: relative;
+  height: 360px;
+  border-radius: 22px;
+  overflow: hidden;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.7), 0 0 30px rgba(139, 92, 246, 0.35);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  animation: floatingSuit 4.5s ease-in-out infinite;
+}
+
+@keyframes floatingSuit {
+  0%, 100% {
+    transform: translateY(0px) scale(1);
+    box-shadow: 0 20px 45px rgba(0,0,0,0.7), 0 0 25px rgba(244,63,94,0.3);
+  }
+  50% {
+    transform: translateY(-10px) scale(1.02);
+    box-shadow: 0 28px 60px rgba(0,0,0,0.9), 0 0 40px rgba(139,92,246,0.6);
+  }
+}
+
+/* SECTION HEADLINES */
 .section-headline-glow {
   font-family: 'Space Grotesk', sans-serif;
   font-size: 34px;
@@ -85,7 +166,7 @@ body {
   margin-bottom: 6px;
 }
 
-/* Filter Pills */
+/* FILTER PILLS */
 .filter-pill-btn {
   padding: 11px 22px;
   border-radius: 14px;
@@ -111,7 +192,7 @@ body {
   border: 1.5px solid rgba(255, 255, 255, 0.2) !important;
 }
 
-/* 3D Hyper Cards */
+/* 3D HYPER CARDS */
 .hyper-card {
   background: rgba(14, 20, 36, 0.95);
   backdrop-filter: blur(20px);
@@ -137,7 +218,7 @@ body {
   transform: scale(1.06);
 }
 
-/* Vibrant Button */
+/* VIBRANT ACTION BUTTONS */
 .vibrant-btn {
   background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 50%, #3b82f6 100%);
   color: #ffffff !important;
@@ -153,7 +234,7 @@ body {
   box-shadow: 0 12px 30px rgba(139, 92, 246, 0.6);
 }
 
-/* Marquee */
+/* RUNNING MARQUEE */
 .marquee-track {
   display: inline-flex;
   animation: marqueeRoll 20s linear infinite;
@@ -165,7 +246,7 @@ body {
   100% { transform: translateX(-50%); }
 }
 
-/* Lucky Wheel */
+/* CASINO LUCKY WHEEL */
 .wheel-outer-container {
   position: relative;
   width: 300px;
@@ -236,7 +317,6 @@ body {
 /* ========================================================= */
 @media (max-width: 768px) {
   
-  /* Compact Top Header */
   .desktop-navbar-nav,
   .desktop-auth-buttons {
     display: none !important;
@@ -268,7 +348,6 @@ body {
     font-size: 12px !important;
   }
 
-  /* Hero Section on Phone */
   .hero-banner-grid {
     grid-template-columns: 1fr !important;
     padding: 24px 18px !important;
@@ -277,18 +356,11 @@ body {
   }
 
   .hero-banner-grid h1 {
-    font-size: 32px !important;
-    line-height: 1.15 !important;
+    font-size: 30px !important;
   }
 
-  .hero-banner-grid p {
-    font-size: 13px !important;
-    margin-bottom: 20px !important;
-  }
-
-  .hero-banner-grid .vibrant-btn {
-    padding: 12px 24px !important;
-    font-size: 13px !important;
+  .hero-suit-floating-box {
+    height: 280px !important;
   }
 
   .section-headline-glow {
@@ -298,20 +370,16 @@ body {
   .filter-pill-btn {
     padding: 8px 14px !important;
     font-size: 11px !important;
-    border-radius: 10px !important;
   }
 
-  /* Product Grid spacing on Phone */
   main {
-    padding: 0 14px 90px 14px !important; /* Bottom padding so bottom nav doesn't overlap */
+    padding: 0 14px 90px 14px !important;
   }
 
-  /* Footer on Phone */
   footer {
     padding: 30px 16px 100px 16px !important;
   }
 
-  /* Fixed Mobile Bottom Navigation Bar (App Experience) */
   .mobile-bottom-navbar {
     display: flex !important;
     position: fixed;

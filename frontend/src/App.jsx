@@ -12,7 +12,7 @@ function App() {
       price: 699,
       category: "Oversized Tees",
       description: "240 GSM heavy combed cotton in drop-shoulder relaxed silhouette.",
-      image: "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800",
+      image: "https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=800",
       sizes: ["S", "M", "L", "XL", "XXL"]
     },
     {
@@ -35,11 +35,11 @@ function App() {
     },
     {
       _id: "def_4",
-      name: "Textured Corduroy Boxy Shirt",
-      price: 899,
-      category: "Casual Shirts",
-      description: "Breathable layering relaxed silhouette retro over-shirt.",
-      image: "https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=800",
+      name: "Royal Velvet Italian Tuxedo Suit",
+      price: 2499,
+      category: "Coat & Pants",
+      description: "Tailored slim-fit luxury tuxedo blazer and matching trousers.",
+      image: "https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=800",
       sizes: ["S", "M", "L", "XL", "XXL"]
     }
   ];
@@ -56,7 +56,7 @@ function App() {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   
-  const [currentPage, setCurrentPage] = useState('home');
+  const [currentPage, setCurrentPage] = useState(() => localStorage.getItem('stylehub_admin_logged') === 'true' ? 'admin' : 'home');
   const [adminTab, setAdminTab] = useState('analytics');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
@@ -80,9 +80,17 @@ function App() {
   const [wheelRotation, setWheelRotation] = useState(0);
   const [spinReward, setSpinReward] = useState(null);
 
+  // User & Auth States
   const [currentUser, setCurrentUser] = useState(null);
   const [authModal, setAuthModal] = useState(null);
-  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(() => localStorage.getItem('stylehub_admin_logged') === 'true');
+
+  // Profile Edit Toggle & Form States
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [profileName, setProfileName] = useState('');
+  const [profilePhone, setProfilePhone] = useState('');
+  const [profileAddress, setProfileAddress] = useState('');
+  const [profileAvatar, setProfileAvatar] = useState('');
 
   const [couponCode, setCouponCode] = useState('');
   const [discountAmount, setDiscountAmount] = useState(0);
@@ -90,7 +98,7 @@ function App() {
 
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
-  const [category, setCategory] = useState('Oversized Tees');
+  const [category, setCategory] = useState('Coat & Pants');
   const [description, setDescription] = useState('');
   const [image, setImage] = useState('');
 
@@ -117,6 +125,52 @@ function App() {
   const STORE_ADDRESS = "SBLS Nagar, Jalandhar, Punjab";
   const OWNER_NAME = "Suraj Rai";
 
+  const categoryCards = [
+    { 
+      title: 'Men Designer Suits & Blazers', 
+      category: 'Coat & Pants', 
+      count: '15+ Suits', 
+      tag: 'PREMIUM FIT', 
+      image: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=700' 
+    },
+    { 
+      title: 'Men Heavy Oversized Tees', 
+      category: 'Oversized Tees', 
+      count: '24+ Drops', 
+      tag: 'BESTSELLER', 
+      image: 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=700' 
+    },
+    { 
+      title: 'Tactical Men Cargos', 
+      category: 'Cargo Pants', 
+      count: '12+ Fits', 
+      tag: 'STREET MATRIX', 
+      image: 'https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?w=700' 
+    },
+    { 
+      title: 'Men Winter Pullover & Hoodies', 
+      category: 'Hoodies & Jackets', 
+      count: '18+ Styles', 
+      tag: 'WINTER DROP', 
+      image: 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=700' 
+    }
+  ];
+
+  useEffect(() => {
+    const checkSessionExpiry = () => {
+      const loginTime = localStorage.getItem('stylehub_login_time');
+      const TWO_HOURS_MS = 2 * 60 * 60 * 1000;
+      if (loginTime && (Date.now() - parseInt(loginTime, 10) > TWO_HOURS_MS)) {
+        handleLogout();
+        alert("Your session expired after 2 hours. Please sign in again.");
+      }
+    };
+
+    checkSessionExpiry();
+    const interval = setInterval(checkSessionExpiry, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
   useEffect(() => {
     const visits = parseInt(localStorage.getItem('stylehub_site_visits') || '142', 10) + 1;
     localStorage.setItem('stylehub_site_visits', visits.toString());
@@ -137,6 +191,12 @@ function App() {
     if (savedUser) {
       const parsed = JSON.parse(savedUser);
       setCurrentUser(parsed);
+      setProfileName(parsed.name || '');
+      setProfilePhone(parsed.phone || '');
+      setProfileAddress(parsed.address || '');
+      setProfileAvatar(parsed.avatar || '');
+      if (parsed.address) setCustomerAddress(parsed.address);
+
       const savedWish = localStorage.getItem(`wishlist_${parsed.email}`);
       if (savedWish) setWishlist(JSON.parse(savedWish));
     }
@@ -152,17 +212,32 @@ function App() {
   };
 
   const fetchUsers = () => {
-    const allUsers = [];
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && key.startsWith('account_')) {
-        try {
-          const u = JSON.parse(localStorage.getItem(key));
-          allUsers.push(u);
-        } catch (e) {}
-      }
+    const sessions = JSON.parse(localStorage.getItem('stylehub_user_sessions') || '[]');
+    setUsersList(sessions);
+  };
+
+  const recordUserLoginInAdmin = (userData) => {
+    const sessions = JSON.parse(localStorage.getItem('stylehub_user_sessions') || '[]');
+    const existingIndex = sessions.findIndex(u => u.email === userData.email);
+
+    const now = new Date();
+    const recordObj = {
+      name: userData.name || 'Customer',
+      email: userData.email,
+      phone: userData.phone || 'N/A',
+      avatar: userData.avatar || '',
+      lastLogin: `${now.toLocaleDateString()} at ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
+      status: 'Online Now'
+    };
+
+    if (existingIndex > -1) {
+      sessions[existingIndex] = { ...sessions[existingIndex], ...recordObj };
+    } else {
+      sessions.unshift(recordObj);
     }
-    setUsersList(allUsers);
+
+    localStorage.setItem('stylehub_user_sessions', JSON.stringify(sessions));
+    setUsersList(sessions);
   };
 
   const openLuckyWheelModal = () => {
@@ -288,10 +363,12 @@ function App() {
   const handleLoginDirect = (credentials) => {
     if (credentials.isGoogle) {
       setCurrentUser(credentials);
+      setProfileName(credentials.name);
+      setProfilePhone(credentials.phone);
       localStorage.setItem('stylehub_user', JSON.stringify(credentials));
-      localStorage.setItem(`account_${credentials.email}`, JSON.stringify(credentials));
+      localStorage.setItem('stylehub_login_time', Date.now().toString());
+      recordUserLoginInAdmin(credentials);
       setAuthModal(null);
-      fetchUsers();
       return;
     }
 
@@ -303,7 +380,13 @@ function App() {
       const parsed = JSON.parse(savedAcc);
       if (parsed.password === cleanPassword) {
         setCurrentUser(parsed);
+        setProfileName(parsed.name || '');
+        setProfilePhone(parsed.phone || '');
+        setProfileAddress(parsed.address || '');
+        setProfileAvatar(parsed.avatar || '');
         localStorage.setItem('stylehub_user', JSON.stringify(parsed));
+        localStorage.setItem('stylehub_login_time', Date.now().toString());
+        recordUserLoginInAdmin(parsed);
         setAuthModal(null);
         alert(`Welcome back, ${parsed.name}!`);
         return;
@@ -317,24 +400,27 @@ function App() {
     .then((res) => {
       alert(`Welcome back, ${res.data.user.name}!`);
       setCurrentUser(res.data.user);
+      setProfileName(res.data.user.name || '');
+      setProfilePhone(res.data.user.phone || '');
       localStorage.setItem('stylehub_user', JSON.stringify(res.data.user));
+      localStorage.setItem('stylehub_login_time', Date.now().toString());
+      recordUserLoginInAdmin(res.data.user);
       setAuthModal(null);
     })
     .catch(() => {
-      alert("Account credentials not found. Please register via Sign Up.");
+      const newUser = { name: cleanEmail.split('@')[0], email: cleanEmail, phone: 'N/A' };
+      setCurrentUser(newUser);
+      setProfileName(newUser.name);
+      localStorage.setItem('stylehub_user', JSON.stringify(newUser));
+      localStorage.setItem('stylehub_login_time', Date.now().toString());
+      recordUserLoginInAdmin(newUser);
+      setAuthModal(null);
     });
   };
 
   const handleRegisterDirect = (formData) => {
     const cleanEmail = formData.email.toLowerCase().trim();
     const cleanPhone = formData.phone.trim();
-
-    const existingUser = localStorage.getItem(`account_${cleanEmail}`);
-    if (existingUser) {
-      alert("An account with this email address already exists! Please Sign In.");
-      setAuthModal('login');
-      return;
-    }
 
     const newUser = {
       name: formData.name,
@@ -344,10 +430,13 @@ function App() {
     };
 
     setCurrentUser(newUser);
+    setProfileName(newUser.name);
+    setProfilePhone(newUser.phone);
     localStorage.setItem('stylehub_user', JSON.stringify(newUser));
+    localStorage.setItem('stylehub_login_time', Date.now().toString());
     localStorage.setItem(`account_${cleanEmail}`, JSON.stringify({ ...newUser, password: formData.password }));
+    recordUserLoginInAdmin(newUser);
     setAuthModal(null);
-    fetchUsers();
     alert(`Account created successfully! Welcome to StyleHub, ${formData.name}.`);
 
     axios.post(`${API_BASE_URL}/api/auth/register`, {
@@ -358,12 +447,54 @@ function App() {
     }).catch(() => {});
   };
 
+  const handleAvatarUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        alert("Image size should be less than 2MB");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProfileAvatar(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSaveProfile = (e) => {
+    e.preventDefault();
+    if (!currentUser) return;
+    const updatedUser = {
+      ...currentUser,
+      name: profileName,
+      phone: profilePhone,
+      address: profileAddress,
+      avatar: profileAvatar
+    };
+    setCurrentUser(updatedUser);
+    localStorage.setItem('stylehub_user', JSON.stringify(updatedUser));
+    localStorage.setItem(`account_${currentUser.email}`, JSON.stringify(updatedUser));
+    if (profileAddress) setCustomerAddress(profileAddress);
+    recordUserLoginInAdmin(updatedUser);
+    setIsEditingProfile(false);
+    alert("Profile changes saved successfully!");
+  };
+
   const handleLogout = () => {
     setCurrentUser(null);
     localStorage.removeItem('stylehub_user');
+    localStorage.removeItem('stylehub_login_time');
     setCart([]);
     setWishlist([]);
-    alert("Signed out successfully.");
+    setCurrentPage('home');
+    alert("Logged out successfully.");
+  };
+
+  const handleAdminLogout = () => {
+    setIsAdminLoggedIn(false);
+    localStorage.removeItem('stylehub_admin_logged');
+    setCurrentPage('home');
   };
 
   const handleAddProduct = (e) => {
@@ -372,7 +503,7 @@ function App() {
       alert("Product Title, Price, and Category are required!");
       return;
     }
-    const finalImage = image || "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800";
+    const finalImage = image || "https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=800";
     const newProductObj = {
       _id: `prod_${Date.now()}`,
       name,
@@ -424,14 +555,16 @@ function App() {
     }
   };
 
-  const handleDeleteUser = (email) => {
-    if (window.confirm(`Delete user account "${email}" permanently?`)) {
+  const handleDeleteUserSession = (email) => {
+    if (window.confirm(`Remove user session "${email}" permanently?`)) {
+      const sessions = JSON.parse(localStorage.getItem('stylehub_user_sessions') || '[]');
+      const updated = sessions.filter(u => u.email !== email);
+      localStorage.setItem('stylehub_user_sessions', JSON.stringify(updated));
       localStorage.removeItem(`account_${email}`);
       if (currentUser && currentUser.email === email) {
         handleLogout();
       }
-      fetchUsers();
-      alert("User account removed successfully.");
+      setUsersList(updated);
     }
   };
 
@@ -504,18 +637,7 @@ function App() {
 
   const totalRevenue = orders.filter(o => o.status !== 'Cancelled').reduce((sum, o) => sum + (o.totalAmount || 0), 0);
   const totalOrdersCount = orders.length;
-  const pendingOrdersCount = orders.filter(o => o.status === 'Processing' || o.status === 'Pending').length;
-  const shippedOrdersCount = orders.filter(o => o.status === 'Shipped').length;
-  const cancelledOrdersCount = orders.filter(o => o.status === 'Cancelled').length;
-
-  const categoriesList = ['All', 'Oversized Tees', 'Cargo Pants', 'Hoodies & Jackets', 'Casual Shirts'];
-
-  const categoryCards = [
-    { title: 'Graphic Oversized Tees', category: 'Oversized Tees', count: '18+ Drops', tag: 'POPULAR', image: 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?w=600' },
-    { title: 'Utility Cargo Pants', category: 'Cargo Pants', count: '10+ Fits', tag: 'STYLIST PICK', image: 'https://images.unsplash.com/photo-1517445312882-bc9910d016b7?w=600' },
-    { title: 'Winter Fleece & Jackets', category: 'Hoodies & Jackets', count: '14+ Drops', tag: 'WINTER', image: 'https://images.unsplash.com/photo-1578587018452-892bacefd3f2?w=600' },
-    { title: 'Vibrant Casual Shirts', category: 'Casual Shirts', count: '12+ Styles', tag: 'COLOR EDITION', image: 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=600' }
-  ];
+  const categoriesList = ['All', 'Coat & Pants', 'Oversized Tees', 'Cargo Pants', 'Hoodies & Jackets'];
 
   const userOrders = currentUser 
     ? orders.filter(o => o.customerPhone === currentUser.phone || o.customerEmail === currentUser.email)
@@ -542,24 +664,28 @@ function App() {
           <div className="marquee-track">
             <div style={{ color: '#ffffff', fontWeight: '900', fontSize: '11px', letterSpacing: '2px', display: 'inline-flex', gap: '30px', marginRight: '30px' }}>
               <span>SPIN DAILY LUCKY WHEEL FOR EXCLUSIVE DISCOUNTS</span>
-              <span>240+ GSM COMBED COTTON OVERSIZED STREETWEAR</span>
+              <span>MEN LUXURY SUITS & 240+ GSM COMBED COTTON OVERSIZED STREETWEAR</span>
               <span>FREE PAN-INDIA EXPRESS SHIPPING</span>
-              <span>LIMITED EDITION 2026 COLOR DROP LIVE</span>
+              <span>LIMITED EDITION 2026 ROYAL DROP LIVE</span>
             </div>
           </div>
         </div>
 
-        {/* Clean Responsive Header */}
+        {/* Header with Royal Golden "SH STYLE HUB" Logo */}
         <header style={{ background: 'rgba(10, 15, 30, 0.96)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255, 255, 255, 0.16)', position: 'sticky', top: 0, zIndex: 100, padding: '14px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
           
-          {/* Logo */}
-          <div className="header-brand-box" style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }} onClick={() => { setCurrentPage('home'); setSelectedCategory('All'); setSearchQuery(''); }}>
-            <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'linear-gradient(135deg, #f43f5e, #8b5cf6, #06b6d4)', boxShadow: '0 0 20px rgba(244, 63, 94, 0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: '900', fontSize: '18px' }}>
-              ✦
+          {/* Logo Brand Image */}
+          <div className="header-brand-box" style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }} onClick={() => { setCurrentPage('home'); setSelectedCategory('All'); setSearchQuery(''); }}>
+            <div className="brand-logo-emblem">
+              <img src="/logo.png" alt="Style Hub Logo" onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=200'; }} />
             </div>
             <div>
-              <div className="header-brand-title" style={{ fontSize: '20px', fontWeight: '900', color: '#fff', letterSpacing: '-0.5px' }}>MY STYLE <span style={{ color: '#f43f5e' }}>HUB</span></div>
-              <div style={{ fontSize: '9px', color: '#cbd5e1', fontWeight: '800', letterSpacing: '2px' }}>STREETWEAR STUDIO</div>
+              <div className="header-brand-title" style={{ fontSize: '20px', fontWeight: '900', color: '#fff', letterSpacing: '-0.5px' }}>
+                MY STYLE <span style={{ color: '#f43f5e' }}>HUB</span>
+              </div>
+              <div style={{ fontSize: '9px', color: '#cbd5e1', fontWeight: '800', letterSpacing: '2px' }}>
+                LUXURY MEN & STREETWEAR STUDIO
+              </div>
             </div>
           </div>
 
@@ -567,7 +693,7 @@ function App() {
           <div className="header-search-box" style={{ flex: '1', maxWidth: '340px', position: 'relative' }}>
             <input 
               type="text" 
-              placeholder="Search colourful tees, cargos, prints..." 
+              placeholder="Search suits, tees, cargos, prints..." 
               value={searchQuery}
               onChange={(e) => { setSearchQuery(e.target.value); if (currentPage !== 'shop' && currentPage !== 'home') setCurrentPage('shop'); }}
               style={{ width: '100%', padding: '11px 16px 11px 38px', borderRadius: '30px', border: '1.5px solid rgba(236, 72, 153, 0.5)', fontSize: '13px', background: 'rgba(255, 255, 255, 0.1)', color: '#fff', outline: 'none', backdropFilter: 'blur(10px)' }}
@@ -592,7 +718,10 @@ function App() {
             </button>
 
             {currentUser && (
-              <span style={{ cursor: 'pointer', color: currentPage === 'myOrders' ? '#f43f5e' : 'inherit' }} onClick={() => setCurrentPage('myOrders')}>Orders ({userOrders.length})</span>
+              <>
+                <span style={{ cursor: 'pointer', color: currentPage === 'myOrders' ? '#f43f5e' : 'inherit' }} onClick={() => setCurrentPage('myOrders')}>Orders ({userOrders.length})</span>
+                <span style={{ cursor: 'pointer', color: currentPage === 'profile' ? '#f43f5e' : 'inherit' }} onClick={() => { setCurrentPage('profile'); setIsEditingProfile(false); }}>My Profile</span>
+              </>
             )}
           </nav>
 
@@ -612,8 +741,11 @@ function App() {
 
             <button 
               onClick={() => {
-                if (isAdminLoggedIn) setCurrentPage('admin');
-                else setAuthModal('adminLogin');
+                if (isAdminLoggedIn) {
+                  setCurrentPage('admin');
+                } else {
+                  setAuthModal('adminLogin');
+                }
               }}
               style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', padding: '8px 14px', borderRadius: '10px', cursor: 'pointer', fontWeight: '800', fontSize: '11px', color: '#fff' }}
             >
@@ -621,9 +753,16 @@ function App() {
             </button>
 
             {currentUser ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(236, 72, 153, 0.25)', border: '1px solid rgba(236, 72, 153, 0.5)', padding: '5px 12px', borderRadius: '18px' }}>
-                <span style={{ fontSize: '11px', fontWeight: '800', color: '#fbcfe8' }}>👤 {currentUser.name.split(' ')[0]}</span>
-                <button onClick={handleLogout} style={{ background: '#ef4444', color: '#fff', border: 'none', padding: '2px 6px', borderRadius: '8px', cursor: 'pointer', fontSize: '9px', fontWeight: '800' }}>Exit</button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(236, 72, 153, 0.25)', border: '1px solid rgba(236, 72, 153, 0.5)', padding: '4px 12px', borderRadius: '24px' }}>
+                <div onClick={() => { setCurrentPage('profile'); setIsEditingProfile(false); }} style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
+                  {currentUser.avatar ? (
+                    <img src={currentUser.avatar} alt="Profile" style={{ width: '26px', height: '26px', borderRadius: '50%', objectFit: 'cover' }} />
+                  ) : (
+                    <span style={{ fontSize: '14px' }}>👤</span>
+                  )}
+                  <span style={{ fontSize: '12px', fontWeight: '800', color: '#fbcfe8' }}>{currentUser.name.split(' ')[0]}</span>
+                </div>
+                <button onClick={handleLogout} style={{ background: '#ef4444', color: '#fff', border: 'none', padding: '4px 8px', borderRadius: '8px', cursor: 'pointer', fontSize: '10px', fontWeight: '800' }}>Logout</button>
               </div>
             ) : (
               <div style={{ display: 'flex', gap: '6px' }}>
@@ -633,7 +772,7 @@ function App() {
             )}
           </div>
 
-          {/* Quick Cart Drawer Trigger */}
+          {/* Quick Cart Trigger */}
           <div 
             onClick={() => {
               if (!currentUser) {
@@ -652,59 +791,198 @@ function App() {
           </div>
         </header>
 
+        {/* --- MY ACCOUNT PROFILE (ORIGINAL HEADING + EDIT/SAVE/CANCEL CONTROLS) --- */}
+        {currentPage === 'profile' && currentUser && (
+          <main style={{ maxWidth: '720px', margin: '30px auto', padding: '0 16px 80px 16px' }}>
+            <div className="hyper-card" style={{ padding: '34px 26px', background: 'rgba(15, 23, 42, 0.95)' }}>
+              
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', borderBottom: '1px solid rgba(255,255,255,0.12)', paddingBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+                <div>
+                  <h2 className="section-headline-glow" style={{ fontSize: '26px', margin: 0 }}>My Account Profile</h2>
+                  <p style={{ color: '#94a3b8', fontSize: '12px', margin: '4px 0 0 0' }}>Manage your personal details, saved address, and avatar</p>
+                </div>
+                <button onClick={handleLogout} style={{ background: '#ef4444', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '10px', cursor: 'pointer', fontWeight: '800', fontSize: '12px' }}>
+                  🚪 Logout
+                </button>
+              </div>
+
+              {!isEditingProfile ? (
+                /* Profile Normal View */
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '20px', background: 'rgba(255,255,255,0.05)', padding: '16px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)', marginBottom: '20px' }}>
+                    <div style={{ width: '74px', height: '74px', borderRadius: '50%', overflow: 'hidden', border: '2px solid #f43f5e', background: '#0a0f1d', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      {currentUser.avatar ? (
+                        <img src={currentUser.avatar} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ) : (
+                        <span style={{ fontSize: '30px' }}>👤</span>
+                      )}
+                    </div>
+                    <div>
+                      <h3 style={{ fontSize: '20px', fontWeight: '900', color: '#fff', margin: 0 }}>{currentUser.name}</h3>
+                      <div style={{ fontSize: '12px', color: '#38bdf8', marginTop: '4px' }}>{currentUser.email}</div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px' }}>
+                    <div style={{ background: 'rgba(0,0,0,0.3)', padding: '14px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                      <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 'bold' }}>Phone Number:</span>
+                      <div style={{ color: '#fff', fontWeight: '700', marginTop: '2px' }}>{currentUser.phone || 'Not Provided'}</div>
+                    </div>
+
+                    <div style={{ background: 'rgba(0,0,0,0.3)', padding: '14px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                      <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 'bold' }}>Saved Delivery Address:</span>
+                      <div style={{ color: '#fff', fontWeight: '700', marginTop: '2px' }}>{currentUser.address || 'No address saved yet.'}</div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                    <button onClick={() => setIsEditingProfile(true)} className="vibrant-btn" style={{ flex: 1, padding: '13px', borderRadius: '12px', fontSize: '14px' }}>
+                      ✏️ Edit Your Details
+                    </button>
+                    <button onClick={() => setCurrentPage('home')} style={{ padding: '13px 20px', background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', borderRadius: '12px', cursor: 'pointer', fontWeight: '800' }}>
+                      Back to Store
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                /* Profile Edit Mode with Save & Cancel */
+                <form onSubmit={handleSaveProfile} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+                  
+                  {/* Photo Upload */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '20px', background: 'rgba(255,255,255,0.05)', padding: '16px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                    <div style={{ position: 'relative', width: '74px', height: '74px', borderRadius: '50%', overflow: 'hidden', border: '2px solid #f43f5e', background: '#0a0f1d', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      {profileAvatar ? (
+                        <img src={profileAvatar} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ) : (
+                        <span style={{ fontSize: '30px' }}>👤</span>
+                      )}
+                    </div>
+                    <div>
+                      <label style={{ display: 'inline-block', background: 'linear-gradient(135deg, #f43f5e, #8b5cf6)', color: '#fff', padding: '8px 16px', borderRadius: '10px', fontSize: '12px', fontWeight: '800', cursor: 'pointer' }}>
+                        📸 Upload Profile Photo
+                        <input type="file" accept="image/*" onChange={handleAvatarUpload} style={{ display: 'none' }} />
+                      </label>
+                      <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '6px' }}>Recommended: Square PNG or JPG (Max 2MB)</div>
+                    </div>
+                  </div>
+
+                  {/* Name */}
+                  <div>
+                    <label style={{ fontSize: '12px', fontWeight: '800', color: '#cbd5e1', display: 'block', marginBottom: '6px' }}>Full Name</label>
+                    <input 
+                      type="text" 
+                      value={profileName} 
+                      onChange={(e) => setProfileName(e.target.value)} 
+                      required 
+                      style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1.5px solid rgba(255,255,255,0.18)', background: 'rgba(0,0,0,0.4)', color: '#fff', fontSize: '13px' }} 
+                    />
+                  </div>
+
+                  {/* Email */}
+                  <div>
+                    <label style={{ fontSize: '12px', fontWeight: '800', color: '#cbd5e1', display: 'block', marginBottom: '6px' }}>Registered Email (Locked)</label>
+                    <input 
+                      type="email" 
+                      value={currentUser.email} 
+                      disabled 
+                      style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1.5px solid rgba(255,255,255,0.1)', background: 'rgba(0,0,0,0.2)', color: '#94a3b8', fontSize: '13px', cursor: 'not-allowed' }} 
+                    />
+                  </div>
+
+                  {/* Phone */}
+                  <div>
+                    <label style={{ fontSize: '12px', fontWeight: '800', color: '#cbd5e1', display: 'block', marginBottom: '6px' }}>Phone Number</label>
+                    <input 
+                      type="tel" 
+                      value={profilePhone} 
+                      onChange={(e) => setProfilePhone(e.target.value)} 
+                      required 
+                      style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1.5px solid rgba(255,255,255,0.18)', background: 'rgba(0,0,0,0.4)', color: '#fff', fontSize: '13px' }} 
+                    />
+                  </div>
+
+                  {/* Address */}
+                  <div>
+                    <label style={{ fontSize: '12px', fontWeight: '800', color: '#cbd5e1', display: 'block', marginBottom: '6px' }}>Saved Delivery Address</label>
+                    <textarea 
+                      rows="3" 
+                      value={profileAddress} 
+                      placeholder="Enter complete shipping address with Postal Pincode..."
+                      onChange={(e) => setProfileAddress(e.target.value)} 
+                      style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1.5px solid rgba(255,255,255,0.18)', background: 'rgba(0,0,0,0.4)', color: '#fff', fontSize: '13px' }} 
+                    />
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                    <button type="submit" className="vibrant-btn" style={{ flex: 1, padding: '13px', borderRadius: '12px', fontSize: '14px' }}>
+                      💾 Save Profile Changes
+                    </button>
+                    <button type="button" onClick={() => setIsEditingProfile(false)} style={{ padding: '13px 20px', background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', borderRadius: '12px', cursor: 'pointer', fontWeight: '800' }}>
+                      Cancel
+                    </button>
+                  </div>
+
+                </form>
+              )}
+
+            </div>
+          </main>
+        )}
+
         {/* Storefront Home & Catalog Content */}
         {(currentPage === 'home' || currentPage === 'shop') && (
           <main style={{ maxWidth: '1280px', margin: '0 auto', padding: '0 20px 60px 20px' }}>
             
-            {/* Hero Banner */}
+            {/* Hero Section with Moving Color "ROYAL TUXEDO FIT" */}
             {currentPage === 'home' && !searchQuery && (
               <section className="hyper-card hero-banner-grid" style={{ margin: '26px 0 50px 0', padding: '40px', display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '30px', alignItems: 'center', background: 'rgba(12, 18, 34, 0.92)' }}>
                 <div>
                   <div style={{ background: 'rgba(244,63,94,0.18)', border: '1px solid rgba(244,63,94,0.4)', padding: '6px 16px', borderRadius: '30px', display: 'inline-flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
                     <span style={{ fontSize: '13px' }}>🔥</span>
-                    <span style={{ color: '#fff', fontWeight: '900', fontSize: '11px', letterSpacing: '1px' }}>AUTUMN 2026 COLOR DROP LIVE</span>
+                    <span style={{ color: '#fff', fontWeight: '900', fontSize: '11px', letterSpacing: '1px' }}>ROYAL MEN SUITS & AUTUMN DROP LIVE</span>
                   </div>
 
                   <h1 style={{ fontSize: '46px', fontWeight: '900', margin: '0 0 14px 0', letterSpacing: '-1.2px', lineHeight: '1.1', color: '#ffffff' }}>
                     UNLEASH YOUR <br/>
-                    <span style={{ background: 'linear-gradient(90deg, #f43f5e, #fb923c, #facc15, #38bdf8, #c084fc)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                      COLOR AURA FIT
+                    <span className="animated-tuxedo-fit">
+                      ROYAL TUXEDO FIT
                     </span>
                   </h1>
 
                   <p style={{ fontSize: '15px', color: '#cbd5e1', margin: '0 0 24px 0', lineHeight: '1.6', fontWeight: '500', maxWidth: '480px' }}>
-                    Heavyweight 240+ GSM pure combed cotton in saturated vivid colorways, tactical multi-pocket cargos, and pastel drop shoulders.
+                    Italian tailored blazers, luxury two-piece tuxedo suits, heavy 240+ GSM combed cotton streetwear, and tactical multi-pocket cargos.
                   </p>
 
                   <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
                     <button 
-                      onClick={() => setCurrentPage('shop')} 
+                      onClick={() => { setSelectedCategory('Coat & Pants'); setCurrentPage('shop'); }} 
                       className="vibrant-btn"
                       style={{ padding: '13px 28px', borderRadius: '14px', fontSize: '14px' }}
                     >
-                      Shop All Fits →
+                      Explore Suits & Coats 👔 →
                     </button>
                     <button 
-                      onClick={() => { setSelectedCategory('Cargo Pants'); setCurrentPage('shop'); }} 
+                      onClick={() => { setSelectedCategory('Oversized Tees'); setCurrentPage('shop'); }} 
                       style={{ background: 'rgba(255,255,255,0.12)', color: '#fff', border: '1px solid rgba(255,255,255,0.25)', padding: '13px 22px', borderRadius: '14px', fontWeight: '800', fontSize: '13px', cursor: 'pointer', backdropFilter: 'blur(10px)' }}
                     >
-                      Tactical Cargos 👖
+                      Streetwear Drops 👕
                     </button>
                   </div>
                 </div>
 
-                <div style={{ position: 'relative', height: '340px', borderRadius: '22px', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.5)', border: '2px solid rgba(255,255,255,0.2)' }}>
+                {/* Animated Floating Suit Showcase */}
+                <div className="hero-suit-floating-box">
                   <img 
-                    src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800" 
-                    alt="Streetwear Model" 
+                    src="https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=800" 
+                    alt="Men Luxury Coat Pant Suit" 
                     style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
                   />
                   <div style={{ position: 'absolute', bottom: '14px', left: '14px', right: '14px', background: 'rgba(10, 15, 30, 0.95)', backdropFilter: 'blur(12px)', padding: '10px 16px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.2)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
-                      <div style={{ fontSize: '10px', color: '#f43f5e', fontWeight: '800' }}>FEATURED COLOR DROP</div>
-                      <div style={{ fontSize: '14px', fontWeight: '900', color: '#fff' }}>Neon Sunset Oversized Fit</div>
+                      <div style={{ fontSize: '10px', color: '#f43f5e', fontWeight: '800' }}>FEATURED ROYAL FIT</div>
+                      <div style={{ fontSize: '14px', fontWeight: '900', color: '#fff' }}>Velvet Italian Tuxedo Suit</div>
                     </div>
-                    <span style={{ fontSize: '16px', fontWeight: '900', color: '#4ade80' }}>₹799</span>
+                    <span style={{ fontSize: '16px', fontWeight: '900', color: '#4ade80' }}>₹2,499</span>
                   </div>
                 </div>
               </section>
@@ -732,7 +1010,7 @@ function App() {
                       style={{ height: '300px' }}
                     >
                       <img src={c.image} alt={c.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: 'linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(6,10,22,0.96) 90%)' }}></div>
+                      <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: 'linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(6,10,22,0.96) 90%)' }}></div>
                       
                       <div style={{ position: 'absolute', top: '14px', left: '14px', fontWeight: '800', fontSize: '10px', color: '#fff', background: 'linear-gradient(135deg, #f43f5e, #8b5cf6)', padding: '5px 12px', borderRadius: '8px' }}>
                         {c.tag}
@@ -740,7 +1018,7 @@ function App() {
 
                       <div style={{ position: 'absolute', bottom: '16px', left: '16px', right: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div>
-                          <div style={{ color: '#ffffff', fontSize: '18px', fontWeight: '900' }}>{c.title}</div>
+                          <div style={{ color: '#ffffff', fontSize: '17px', fontWeight: '900' }}>{c.title}</div>
                           <div style={{ color: '#38bdf8', fontSize: '12px', fontWeight: '800', marginTop: '2px' }}>{c.count}</div>
                         </div>
                         <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: '#fff', color: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '900', fontSize: '16px' }}>
@@ -758,7 +1036,7 @@ function App() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px', flexWrap: 'wrap', gap: '10px' }}>
                 <div>
                   <span className="section-tagline-vivid">
-                    {searchQuery ? `SEARCH RESULTS` : 'FRESH STREETWEAR DROPS'}
+                    {searchQuery ? `SEARCH RESULTS` : 'FRESH STREETWEAR & SUITS'}
                   </span>
                   <h2 className="section-headline-glow" style={{ margin: '4px 0 0 0' }}>
                     {searchQuery ? `"${searchQuery}" (${filteredProducts.length})` : selectedCategory === 'All' ? 'All Vibrant Drops' : selectedCategory}
@@ -779,7 +1057,7 @@ function App() {
                     onClick={() => { setSelectedCategory(cat); setSearchQuery(''); }}
                     className={`filter-pill-btn ${selectedCategory === cat ? 'active' : 'inactive'}`}
                   >
-                    {cat === 'All' ? '✨ All' : cat === 'Oversized Tees' ? '👕 Oversized Tees' : cat === 'Cargo Pants' ? '👖 Cargos' : cat === 'Hoodies & Jackets' ? '🧥 Outerwear' : '👔 Shirts'}
+                    {cat === 'All' ? '✨ All' : cat === 'Coat & Pants' ? '👔 Suits & Coats' : cat === 'Oversized Tees' ? '👕 Oversized Tees' : cat === 'Cargo Pants' ? '👖 Cargos' : '🧥 Outerwear'}
                   </button>
                 ))}
               </div>
@@ -809,7 +1087,7 @@ function App() {
                           <img src={item.image} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                           
                           <span style={{ position: 'absolute', top: '14px', left: '14px', background: 'rgba(10, 15, 30, 0.95)', backdropFilter: 'blur(8px)', color: '#38bdf8', fontSize: '10px', padding: '5px 12px', borderRadius: '8px', fontWeight: '800', border: '1px solid rgba(255,255,255,0.15)' }}>
-                            {item.category || 'Streetwear'}
+                            {item.category || 'Men Fits'}
                           </span>
 
                           <button 
@@ -832,10 +1110,10 @@ function App() {
                             <h4 style={{ margin: '0 0 4px 0', fontSize: '16px', fontWeight: '800', color: '#fff' }}>{item.name}</h4>
                             
                             <div style={{ fontSize: '10px', color: '#f43f5e', fontWeight: '800', marginBottom: '8px' }}>
-                              ✦ 240+ GSM Pure Combed Cotton
+                              ✦ Premium Fabric & Tailored Construction
                             </div>
 
-                            <p style={{ color: '#cbd5e1', fontSize: '12px', margin: '0 0 12px 0', lineHeight: '1.5' }}>{item.description || 'Premium drop-shoulder colorful silhouette.'}</p>
+                            <p style={{ color: '#cbd5e1', fontSize: '12px', margin: '0 0 12px 0', lineHeight: '1.5' }}>{item.description || 'Luxury silhouette outfit for men.'}</p>
                             
                             <div style={{ marginBottom: '14px' }}>
                               <span style={{ fontSize: '10px', fontWeight: '800', color: '#cbd5e1', textTransform: 'uppercase' }}>Size:</span>
@@ -1045,7 +1323,7 @@ function App() {
         {/* Collections View */}
         {currentPage === 'categories' && (
           <main style={{ maxWidth: '1260px', margin: '20px auto', padding: '0 16px 60px 16px' }}>
-            <h2 className="section-headline-glow" style={{ marginBottom: '20px' }}>All Streetwear Collections</h2>
+            <h2 className="section-headline-glow" style={{ marginBottom: '20px' }}>All Streetwear & Suit Collections</h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px' }}>
               {categoryCards.map((c, i) => (
                 <div key={i} onClick={() => { setSelectedCategory(c.category); setCurrentPage('shop'); }} className="hyper-card" style={{ height: '300px' }}>
@@ -1078,9 +1356,9 @@ function App() {
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                 <button onClick={() => setAdminTab('analytics')} style={{ padding: '8px 14px', borderRadius: '10px', border: 'none', cursor: 'pointer', fontWeight: '800', background: adminTab === 'analytics' ? 'linear-gradient(135deg, #f43f5e, #8b5cf6)' : 'rgba(255,255,255,0.15)', color: '#fff', fontSize: '12px' }}>📊 Analytics</button>
                 <button onClick={() => setAdminTab('orders')} style={{ padding: '8px 14px', borderRadius: '10px', border: 'none', cursor: 'pointer', fontWeight: '800', background: adminTab === 'orders' ? 'linear-gradient(135deg, #f43f5e, #8b5cf6)' : 'rgba(255,255,255,0.15)', color: '#fff', fontSize: '12px' }}>📦 Orders ({orders.length})</button>
-                <button onClick={() => setAdminTab('users')} style={{ padding: '8px 14px', borderRadius: '10px', border: 'none', cursor: 'pointer', fontWeight: '800', background: adminTab === 'users' ? 'linear-gradient(135deg, #f43f5e, #8b5cf6)' : 'rgba(255,255,255,0.15)', color: '#fff', fontSize: '12px' }}>👥 Users ({usersList.length})</button>
+                <button onClick={() => setAdminTab('users')} style={{ padding: '8px 14px', borderRadius: '10px', border: 'none', cursor: 'pointer', fontWeight: '800', background: adminTab === 'users' ? 'linear-gradient(135deg, #f43f5e, #8b5cf6)' : 'rgba(255,255,255,0.15)', color: '#fff', fontSize: '12px' }}>👥 User Sessions ({usersList.length})</button>
                 <button onClick={() => setAdminTab('products')} style={{ padding: '8px 14px', borderRadius: '10px', border: 'none', cursor: 'pointer', fontWeight: '800', background: adminTab === 'products' ? 'linear-gradient(135deg, #f43f5e, #8b5cf6)' : 'rgba(255,255,255,0.15)', color: '#fff', fontSize: '12px' }}>👕 Catalog ({products.length})</button>
-                <button onClick={() => { setIsAdminLoggedIn(false); setCurrentPage('home'); }} style={{ background: '#ef4444', color: '#fff', border: 'none', padding: '8px 14px', borderRadius: '10px', cursor: 'pointer', fontWeight: '800', fontSize: '12px' }}>Exit</button>
+                <button onClick={handleAdminLogout} style={{ background: '#ef4444', color: '#fff', border: 'none', padding: '8px 14px', borderRadius: '10px', cursor: 'pointer', fontWeight: '800', fontSize: '12px' }}>Exit Admin</button>
               </div>
             </div>
 
@@ -1099,7 +1377,7 @@ function App() {
                   </div>
 
                   <div className="hyper-card" style={{ padding: '18px' }}>
-                    <div style={{ fontSize: '11px', fontWeight: '800', color: '#cbd5e1' }}>USERS</div>
+                    <div style={{ fontSize: '11px', fontWeight: '800', color: '#cbd5e1' }}>ACTIVE SESSIONS</div>
                     <div style={{ fontSize: '28px', fontWeight: '900', color: '#facc15', marginTop: '4px' }}>{usersList.length}</div>
                   </div>
 
@@ -1111,30 +1389,51 @@ function App() {
               </div>
             )}
 
-            {/* TAB 2: USERS */}
+            {/* TAB 2: LIVE USER LOGIN RECORDS */}
             {adminTab === 'users' && (
               <div style={{ marginTop: '20px', overflowX: 'auto' }}>
-                <h3 className="section-headline-glow" style={{ fontSize: '20px', margin: '0 0 12px 0' }}>Registered Users ({usersList.length})</h3>
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', background: 'rgba(10, 16, 32, 0.96)', borderRadius: '14px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.15)', minWidth: '500px' }}>
+                <h3 className="section-headline-glow" style={{ fontSize: '20px', margin: '0 0 12px 0' }}>Live Logged-In User Sessions ({usersList.length})</h3>
+                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', background: 'rgba(10, 16, 32, 0.96)', borderRadius: '14px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.15)', minWidth: '600px' }}>
                   <thead>
                     <tr style={{ background: 'rgba(255,255,255,0.1)' }}>
-                      <th style={{ padding: '10px' }}>Name</th>
-                      <th style={{ padding: '10px' }}>Email</th>
-                      <th style={{ padding: '10px' }}>Phone</th>
-                      <th style={{ padding: '10px' }}>Action</th>
+                      <th style={{ padding: '10px', color: '#fff' }}>User</th>
+                      <th style={{ padding: '10px', color: '#fff' }}>Email Address</th>
+                      <th style={{ padding: '10px', color: '#fff' }}>Phone</th>
+                      <th style={{ padding: '10px', color: '#fff' }}>Last Active Time</th>
+                      <th style={{ padding: '10px', color: '#fff' }}>Status</th>
+                      <th style={{ padding: '10px', color: '#fff' }}>Action</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {usersList.map((u, i) => (
-                      <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-                        <td style={{ padding: '10px', fontWeight: 'bold' }}>{u.name}</td>
-                        <td style={{ padding: '10px', color: '#38bdf8' }}>{u.email}</td>
-                        <td style={{ padding: '10px' }}>{u.phone || 'N/A'}</td>
-                        <td style={{ padding: '10px' }}>
-                          <button onClick={() => handleDeleteUser(u.email)} style={{ background: '#ef4444', color: '#fff', border: 'none', padding: '4px 10px', borderRadius: '6px', cursor: 'pointer', fontSize: '11px' }}>Delete</button>
-                        </td>
+                    {usersList.length === 0 ? (
+                      <tr>
+                        <td colSpan="6" style={{ padding: '20px', textAlign: 'center', color: '#cbd5e1' }}>No active user logins recorded yet.</td>
                       </tr>
-                    ))}
+                    ) : (
+                      usersList.map((u, i) => (
+                        <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                          <td style={{ padding: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            {u.avatar ? (
+                              <img src={u.avatar} alt="Avatar" style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover' }} />
+                            ) : (
+                              <span>👤</span>
+                            )}
+                            <b style={{ color: '#fff' }}>{u.name}</b>
+                          </td>
+                          <td style={{ padding: '10px', color: '#38bdf8' }}>{u.email}</td>
+                          <td style={{ padding: '10px', color: '#cbd5e1' }}>{u.phone || 'N/A'}</td>
+                          <td style={{ padding: '10px', color: '#facc15', fontSize: '12px' }}>{u.lastLogin || 'Just Now'}</td>
+                          <td style={{ padding: '10px' }}>
+                            <span style={{ background: 'rgba(34, 197, 94, 0.2)', color: '#4ade80', padding: '4px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: 'bold' }}>
+                              ● {u.status || 'Active'}
+                            </span>
+                          </td>
+                          <td style={{ padding: '10px' }}>
+                            <button onClick={() => handleDeleteUserSession(u.email)} style={{ background: '#ef4444', color: '#fff', border: 'none', padding: '4px 10px', borderRadius: '6px', cursor: 'pointer', fontSize: '11px' }}>Delete</button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -1169,7 +1468,7 @@ function App() {
                           </select>
                         </td>
                         <td style={{ padding: '10px' }}>
-                          <button onClick={() => handleDeleteOrder(o._id)} style={{ background: '#ef4444', color: '#fff', border: 'none', padding: '4px 10px', borderRadius: '6px', cursor: 'pointer' }}>Delete</button>
+                          <button onClick={() => handleDeleteOrder(o._id)} style={{ background: '#ef4444', color: '#fff', border: 'none', padding: '4px 10px', borderRadius: '6px', cursor: 'pointer', fontSize: '11px' }}>Delete</button>
                         </td>
                       </tr>
                     ))}
@@ -1187,10 +1486,10 @@ function App() {
                     <input type="text" placeholder="Title *" value={name} onChange={(e) => setName(e.target.value)} required style={{ padding: '10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.4)', color: '#fff' }} />
                     <input type="number" placeholder="Price (₹) *" value={price} onChange={(e) => setPrice(e.target.value)} required style={{ padding: '10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.4)', color: '#fff' }} />
                     <select value={category} onChange={(e) => setCategory(e.target.value)} style={{ padding: '10px', borderRadius: '8px', border: '1px solid #f43f5e', background: 'rgba(0,0,0,0.4)', color: '#fff' }}>
+                      <option value="Coat & Pants">Coat & Pants</option>
                       <option value="Oversized Tees">Oversized Tees</option>
                       <option value="Cargo Pants">Cargo Pants</option>
                       <option value="Hoodies & Jackets">Hoodies & Jackets</option>
-                      <option value="Casual Shirts">Casual Shirts</option>
                     </select>
                     <input type="url" placeholder="Image URL" value={image} onChange={(e) => setImage(e.target.value)} style={{ padding: '10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.4)', color: '#fff' }} />
                   </div>
@@ -1225,32 +1524,34 @@ function App() {
         )}
       </div>
 
-      {/* Complete 4-Column Footer */}
+      {/* Full 4-Column Footer with Royal Brand Logo Image */}
       <footer style={{ background: 'rgba(8, 12, 22, 0.98)', color: '#cbd5e1', padding: '50px 40px 30px 40px', borderTop: '1px solid rgba(255,255,255,0.15)', position: 'relative', zIndex: 1 }}>
         <div style={{ maxWidth: '1280px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '35px', paddingBottom: '35px', borderBottom: '1px solid rgba(255,255,255,0.15)' }}>
           
-          {/* Column 1: Brand Info */}
           <div>
-            <div style={{ fontSize: '22px', fontWeight: '900', marginBottom: '12px', color: '#fff' }}>
-              MY STYLE <span style={{ color: '#f43f5e' }}>HUB</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+              <div className="brand-logo-emblem" style={{ width: '38px', height: '38px' }}>
+                <img src="/logo.png" alt="Style Hub Logo" onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=200'; }} />
+              </div>
+              <div style={{ fontSize: '22px', fontWeight: '900', color: '#fff' }}>
+                MY STYLE <span style={{ color: '#f43f5e' }}>HUB</span>
+              </div>
             </div>
             <p style={{ color: '#94a3b8', fontSize: '13px', lineHeight: '1.7', margin: 0 }}>
               Vibrant D2C luxury streetwear founded by <b>{OWNER_NAME}</b>. Crafted with pure combed heavyweight cottons and energetic color palettes.
             </p>
           </div>
 
-          {/* Column 2: Collections Links */}
           <div>
             <div style={{ fontSize: '14px', fontWeight: '800', color: '#fff', textTransform: 'uppercase', marginBottom: '12px', letterSpacing: '0.5px' }}>Collections</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px' }}>
+              <span style={{ cursor: 'pointer', color: '#cbd5e1' }} onClick={() => { setSelectedCategory('Coat & Pants'); setCurrentPage('shop'); }}>Designer Suits & Coats</span>
               <span style={{ cursor: 'pointer', color: '#cbd5e1' }} onClick={() => { setSelectedCategory('Oversized Tees'); setCurrentPage('shop'); }}>Oversized T-Shirts</span>
               <span style={{ cursor: 'pointer', color: '#cbd5e1' }} onClick={() => { setSelectedCategory('Cargo Pants'); setCurrentPage('shop'); }}>Tactical Cargo Pants</span>
               <span style={{ cursor: 'pointer', color: '#cbd5e1' }} onClick={() => { setSelectedCategory('Hoodies & Jackets'); setCurrentPage('shop'); }}>Heavy Outerwear</span>
-              <span style={{ cursor: 'pointer', color: '#cbd5e1' }} onClick={() => { setSelectedCategory('Casual Shirts'); setCurrentPage('shop'); }}>Casual Shirts</span>
             </div>
           </div>
 
-          {/* Column 3: Store & Support Details */}
           <div>
             <div style={{ fontSize: '14px', fontWeight: '800', color: '#fff', textTransform: 'uppercase', marginBottom: '12px', letterSpacing: '0.5px' }}>Support & Store</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px' }}>
@@ -1260,7 +1561,6 @@ function App() {
             </div>
           </div>
 
-          {/* Column 4: VIP Drop Alerts */}
           <div>
             <div style={{ fontSize: '14px', fontWeight: '800', color: '#fff', textTransform: 'uppercase', marginBottom: '12px', letterSpacing: '0.5px' }}>VIP Drop Alerts</div>
             <p style={{ fontSize: '13px', color: '#94a3b8', margin: '0 0 12px 0' }}>Subscribe to get color drop alerts & exclusive personalized discounts.</p>
@@ -1279,14 +1579,13 @@ function App() {
 
         </div>
 
-        {/* Bottom Copyright */}
         <div style={{ maxWidth: '1280px', margin: '18px auto 0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', color: '#94a3b8', flexWrap: 'wrap', gap: '10px' }}>
           <div>© 2026 My Style Hub Studio. Founder: <b>{OWNER_NAME}</b></div>
           <div>Crafted for Modern Streetwear Culture</div>
         </div>
       </footer>
 
-      {/* Mobile Bottom Bar */}
+      {/* Mobile App Bottom Navigation Bar */}
       <nav className="mobile-bottom-navbar">
         <button 
           className={`mobile-nav-item ${currentPage === 'home' ? 'active' : ''}`}
@@ -1322,17 +1621,18 @@ function App() {
         </button>
 
         <button 
-          className="mobile-nav-item"
+          className={`mobile-nav-item ${currentPage === 'profile' ? 'active' : ''}`}
           onClick={() => {
             if (currentUser) {
-              setCurrentPage('myOrders');
+              setCurrentPage('profile');
+              setIsEditingProfile(false);
             } else {
               setAuthModal('login');
             }
           }}
         >
           <span className="icon">👤</span>
-          <span>{currentUser ? 'Orders' : 'Sign In'}</span>
+          <span>{currentUser ? 'Profile' : 'Sign In'}</span>
         </button>
       </nav>
 
@@ -1425,6 +1725,7 @@ function App() {
           onAdminSuccess={(enteredPin) => {
             if (enteredPin === ADMIN_SECRET) {
               setIsAdminLoggedIn(true);
+              localStorage.setItem('stylehub_admin_logged', 'true');
               setAuthModal(null);
               setCurrentPage('admin');
               fetchOrders();
@@ -1601,7 +1902,7 @@ function App() {
                       <option value="HDFC Bank">HDFC Bank</option>
                       <option value="ICICI Bank">ICICI Bank</option>
                     </select>
-                    <button type="submit" disabled={isProcessingPay} className="vibrant-btn" style={{ width: '100%', marginTop: '12px', padding: '12px', borderRadius: '10px' }}>
+                    <button type="submit" disabled={isProcessingPay} className="vibrant-btn" style={{ width: '100%', marginTop: '14px', padding: '12px', borderRadius: '10px' }}>
                       {isProcessingPay ? `Connecting...` : `Pay ₹${orderSummary.totalAmount}`}
                     </button>
                   </form>
