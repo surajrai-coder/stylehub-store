@@ -44,9 +44,45 @@ function App() {
     }
   ];
 
+  const defaultCategories = [
+    { 
+      title: 'Men Designer Suits & Blazers', 
+      category: 'Coat & Pants', 
+      count: '15+ Suits', 
+      tag: 'PREMIUM FIT', 
+      image: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=700' 
+    },
+    { 
+      title: 'Men Heavy Oversized Tees', 
+      category: 'Oversized Tees', 
+      count: '24+ Drops', 
+      tag: 'BESTSELLER', 
+      image: 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=700' 
+    },
+    { 
+      title: 'Tactical Men Cargos', 
+      category: 'Cargo Pants', 
+      count: '12+ Fits', 
+      tag: 'STREET MATRIX', 
+      image: 'https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?w=700' 
+    },
+    { 
+      title: 'Men Winter Pullover & Hoodies', 
+      category: 'Hoodies & Jackets', 
+      count: '18+ Styles', 
+      tag: 'WINTER DROP', 
+      image: 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=700' 
+    }
+  ];
+
   const [products, setProducts] = useState(() => {
     const local = localStorage.getItem('stylehub_local_products');
     return local ? [...defaultCatalog, ...JSON.parse(local)] : defaultCatalog;
+  });
+
+  const [categoryCards, setCategoryCards] = useState(() => {
+    const localCat = localStorage.getItem('stylehub_custom_categories');
+    return localCat ? JSON.parse(localCat) : defaultCategories;
   });
 
   const [orders, setOrders] = useState([]);
@@ -80,17 +116,16 @@ function App() {
   const [wheelRotation, setWheelRotation] = useState(0);
   const [spinReward, setSpinReward] = useState(null);
 
-  // User & Auth States
   const [currentUser, setCurrentUser] = useState(null);
   const [authModal, setAuthModal] = useState(null);
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(() => localStorage.getItem('stylehub_admin_logged') === 'true');
 
-  // Profile Edit Toggle & Form States
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [profileName, setProfileName] = useState('');
   const [profilePhone, setProfilePhone] = useState('');
   const [profileAddress, setProfileAddress] = useState('');
   const [profileAvatar, setProfileAvatar] = useState('');
+  const [avatarZoom, setAvatarZoom] = useState(1);
 
   const [couponCode, setCouponCode] = useState('');
   const [discountAmount, setDiscountAmount] = useState(0);
@@ -125,49 +160,27 @@ function App() {
   const STORE_ADDRESS = "SBLS Nagar, Jalandhar, Punjab";
   const OWNER_NAME = "Suraj Rai";
 
-  const categoryCards = [
-    { 
-      title: 'Men Designer Suits & Blazers', 
-      category: 'Coat & Pants', 
-      count: '15+ Suits', 
-      tag: 'PREMIUM FIT', 
-      image: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=700' 
-    },
-    { 
-      title: 'Men Heavy Oversized Tees', 
-      category: 'Oversized Tees', 
-      count: '24+ Drops', 
-      tag: 'BESTSELLER', 
-      image: 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=700' 
-    },
-    { 
-      title: 'Tactical Men Cargos', 
-      category: 'Cargo Pants', 
-      count: '12+ Fits', 
-      tag: 'STREET MATRIX', 
-      image: 'https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?w=700' 
-    },
-    { 
-      title: 'Men Winter Pullover & Hoodies', 
-      category: 'Hoodies & Jackets', 
-      count: '18+ Styles', 
-      tag: 'WINTER DROP', 
-      image: 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=700' 
-    }
-  ];
-
+  // Cloud Orders & Active Status Sync
   useEffect(() => {
     const checkSessionExpiry = () => {
       const loginTime = localStorage.getItem('stylehub_login_time');
       const TWO_HOURS_MS = 2 * 60 * 60 * 1000;
       if (loginTime && (Date.now() - parseInt(loginTime, 10) > TWO_HOURS_MS)) {
         handleLogout();
-        alert("Your session expired after 2 hours. Please sign in again.");
+        alert("Your session expired after 2 hours. Please log in again.");
+      }
+
+      const savedUser = localStorage.getItem('stylehub_user');
+      if (savedUser) {
+        try {
+          const parsedUser = JSON.parse(savedUser);
+          recordUserLoginInAdmin(parsedUser, '🟢 Online Now');
+        } catch (e) {}
       }
     };
 
     checkSessionExpiry();
-    const interval = setInterval(checkSessionExpiry, 60000);
+    const interval = setInterval(checkSessionExpiry, 30000);
     return () => clearInterval(interval);
   }, []);
 
@@ -204,7 +217,19 @@ function App() {
 
   const fetchOrders = () => {
     axios.get(`${API_BASE_URL}/api/orders`)
-      .then((res) => setOrders(Array.isArray(res.data) ? res.data : []))
+      .then((res) => {
+        const cloudOrders = Array.isArray(res.data) ? res.data : [];
+        const localOrders = JSON.parse(localStorage.getItem('stylehub_local_orders') || '[]');
+        
+        // Merge cloud and local orders without duplication
+        const combined = [...cloudOrders];
+        localOrders.forEach(loc => {
+          if (!combined.some(c => c._id === loc._id)) {
+            combined.push(loc);
+          }
+        });
+        setOrders(combined);
+      })
       .catch(() => {
         const localOrders = JSON.parse(localStorage.getItem('stylehub_local_orders') || '[]');
         setOrders(localOrders);
@@ -216,7 +241,7 @@ function App() {
     setUsersList(sessions);
   };
 
-  const recordUserLoginInAdmin = (userData) => {
+  const recordUserLoginInAdmin = (userData, customStatus = '🟢 Online Now') => {
     const sessions = JSON.parse(localStorage.getItem('stylehub_user_sessions') || '[]');
     const existingIndex = sessions.findIndex(u => u.email === userData.email);
 
@@ -227,7 +252,7 @@ function App() {
       phone: userData.phone || 'N/A',
       avatar: userData.avatar || '',
       lastLogin: `${now.toLocaleDateString()} at ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
-      status: 'Online Now'
+      status: customStatus
     };
 
     if (existingIndex > -1) {
@@ -242,7 +267,7 @@ function App() {
 
   const openLuckyWheelModal = () => {
     if (!currentUser) {
-      alert("Please Sign In or Create an Account to spin the Lucky Wheel!");
+      alert("Please Log In or Create an Account to spin the Lucky Wheel!");
       setAuthModal('login');
       return;
     }
@@ -297,7 +322,7 @@ function App() {
 
   const toggleWishlist = (product) => {
     if (!currentUser) {
-      alert("Please Sign In first to save items to your wishlist!");
+      alert("Please Log In first to save items to your wishlist!");
       setAuthModal('login');
       return;
     }
@@ -309,7 +334,7 @@ function App() {
 
   const addToCart = (product) => {
     if (!currentUser) {
-      alert("Please Sign In or Create an Account to start shopping!");
+      alert("Please Log In or Create an Account to start shopping!");
       setAuthModal('login');
       return;
     }
@@ -322,7 +347,7 @@ function App() {
   const applyCoupon = () => {
     const cleanCode = couponCode.trim().toUpperCase();
     if (!currentUser) {
-      alert("Please Sign In to redeem coupons.");
+      alert("Please Log In to redeem coupons.");
       return;
     }
 
@@ -367,7 +392,7 @@ function App() {
       setProfilePhone(credentials.phone);
       localStorage.setItem('stylehub_user', JSON.stringify(credentials));
       localStorage.setItem('stylehub_login_time', Date.now().toString());
-      recordUserLoginInAdmin(credentials);
+      recordUserLoginInAdmin(credentials, '🟢 Online Now (Google)');
       setAuthModal(null);
       return;
     }
@@ -386,7 +411,7 @@ function App() {
         setProfileAvatar(parsed.avatar || '');
         localStorage.setItem('stylehub_user', JSON.stringify(parsed));
         localStorage.setItem('stylehub_login_time', Date.now().toString());
-        recordUserLoginInAdmin(parsed);
+        recordUserLoginInAdmin(parsed, '🟢 Online Now');
         setAuthModal(null);
         alert(`Welcome back, ${parsed.name}!`);
         return;
@@ -404,7 +429,7 @@ function App() {
       setProfilePhone(res.data.user.phone || '');
       localStorage.setItem('stylehub_user', JSON.stringify(res.data.user));
       localStorage.setItem('stylehub_login_time', Date.now().toString());
-      recordUserLoginInAdmin(res.data.user);
+      recordUserLoginInAdmin(res.data.user, '🟢 Online Now');
       setAuthModal(null);
     })
     .catch(() => {
@@ -413,7 +438,7 @@ function App() {
       setProfileName(newUser.name);
       localStorage.setItem('stylehub_user', JSON.stringify(newUser));
       localStorage.setItem('stylehub_login_time', Date.now().toString());
-      recordUserLoginInAdmin(newUser);
+      recordUserLoginInAdmin(newUser, '🟢 Online Now');
       setAuthModal(null);
     });
   };
@@ -435,7 +460,7 @@ function App() {
     localStorage.setItem('stylehub_user', JSON.stringify(newUser));
     localStorage.setItem('stylehub_login_time', Date.now().toString());
     localStorage.setItem(`account_${cleanEmail}`, JSON.stringify({ ...newUser, password: formData.password }));
-    recordUserLoginInAdmin(newUser);
+    recordUserLoginInAdmin(newUser, '🟢 Online Now (New)');
     setAuthModal(null);
     alert(`Account created successfully! Welcome to StyleHub, ${formData.name}.`);
 
@@ -476,12 +501,15 @@ function App() {
     localStorage.setItem('stylehub_user', JSON.stringify(updatedUser));
     localStorage.setItem(`account_${currentUser.email}`, JSON.stringify(updatedUser));
     if (profileAddress) setCustomerAddress(profileAddress);
-    recordUserLoginInAdmin(updatedUser);
+    recordUserLoginInAdmin(updatedUser, '🟢 Online Now');
     setIsEditingProfile(false);
-    alert("Profile changes saved successfully!");
+    alert("Profile and cropped photo saved successfully!");
   };
 
   const handleLogout = () => {
+    if (currentUser) {
+      recordUserLoginInAdmin(currentUser, '🔴 Offline (Logged Out)');
+    }
     setCurrentUser(null);
     localStorage.removeItem('stylehub_user');
     localStorage.removeItem('stylehub_login_time');
@@ -495,6 +523,38 @@ function App() {
     setIsAdminLoggedIn(false);
     localStorage.removeItem('stylehub_admin_logged');
     setCurrentPage('home');
+  };
+
+  const handleAddCategory = (e) => {
+    e.preventDefault();
+    if (!newCatTitle || !newCatName) {
+      alert("Category Title and Filter Name are required!");
+      return;
+    }
+    const newCatObj = {
+      title: newCatTitle,
+      category: newCatName,
+      count: newCatCount || '10+ Items',
+      tag: newCatTag || 'FEATURED',
+      image: newCatImage || 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=700'
+    };
+
+    const updated = [...categoryCards, newCatObj];
+    setCategoryCards(updated);
+    localStorage.setItem('stylehub_custom_categories', JSON.stringify(updated));
+    alert("Category successfully added!");
+    setNewCatTitle('');
+    setNewCatName('');
+    setNewCatCount('');
+    setNewCatImage('');
+  };
+
+  const handleDeleteCategory = (index) => {
+    if (window.confirm("Delete this category card?")) {
+      const updated = categoryCards.filter((_, i) => i !== index);
+      setCategoryCards(updated);
+      localStorage.setItem('stylehub_custom_categories', JSON.stringify(updated));
+    }
   };
 
   const handleAddProduct = (e) => {
@@ -573,9 +633,6 @@ function App() {
   const rawTotalPrice = cart.reduce((total, item) => total + item.price, 0);
   const finalPayablePrice = Math.max(0, rawTotalPrice - discountAmount);
 
-  const upiUrl = `upi://pay?pa=${UPI_ID}&pn=${encodeURIComponent(ACCOUNT_HOLDER)}&am=${finalPayablePrice}&cu=INR&tn=${encodeURIComponent('StyleHub Order')}`;
-  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(upiUrl)}`;
-
   const initiatePaymentGateway = (e) => {
     e.preventDefault();
     if (!customerAddress) {
@@ -603,7 +660,8 @@ function App() {
     window.open(`https://wa.me/${SUPPORT_PHONE}?text=${message}`, '_blank');
   };
 
-  const finalizeOrder = (methodUsed) => {
+  // 3. INSTANT AUTOMATED PAYMENT CONFIRMATION (Bina manual click ke direct confirm)
+  const handleInstantPaymentAndConfirm = (methodUsed) => {
     setIsProcessingPay(true);
     setTimeout(() => {
       const orderId = `ORD-${Date.now()}`;
@@ -621,7 +679,7 @@ function App() {
       localOrders.unshift(orderData);
       localStorage.setItem('stylehub_local_orders', JSON.stringify(localOrders));
 
-      alert("Payment Confirmed! Your order has been placed.");
+      alert("Payment Successful! Your order has been placed and confirmed instantly.");
       sendWhatsAppNotification(orderData, orderId);
       setCompletedOrder(orderData);
       setCart([]);
@@ -631,8 +689,9 @@ function App() {
       setAppliedCoupon('');
       fetchOrders();
 
+      // Cloud sync
       axios.post(`${API_BASE_URL}/api/orders`, orderData).catch(() => {});
-    }, 800);
+    }, 1200);
   };
 
   const totalRevenue = orders.filter(o => o.status !== 'Cancelled').reduce((sum, o) => sum + (o.totalAmount || 0), 0);
@@ -671,10 +730,9 @@ function App() {
           </div>
         </div>
 
-        {/* Header with Royal Golden "SH STYLE HUB" Logo */}
+        {/* Header */}
         <header style={{ background: 'rgba(10, 15, 30, 0.96)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255, 255, 255, 0.16)', position: 'sticky', top: 0, zIndex: 100, padding: '14px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
           
-          {/* Logo Brand Image */}
           <div className="header-brand-box" style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }} onClick={() => { setCurrentPage('home'); setSelectedCategory('All'); setSearchQuery(''); }}>
             <div className="brand-logo-emblem">
               <img src="/logo.png" alt="Style Hub Logo" onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=200'; }} />
@@ -689,7 +747,6 @@ function App() {
             </div>
           </div>
 
-          {/* Search Box */}
           <div className="header-search-box" style={{ flex: '1', maxWidth: '340px', position: 'relative' }}>
             <input 
               type="text" 
@@ -704,7 +761,6 @@ function App() {
             )}
           </div>
 
-          {/* Desktop Nav Links */}
           <nav className="desktop-navbar-nav" style={{ display: 'flex', gap: '18px', fontSize: '13px', fontWeight: '800', color: '#e2e8f0', alignItems: 'center' }}>
             <span style={{ cursor: 'pointer', color: currentPage === 'home' ? '#f43f5e' : 'inherit' }} onClick={() => { setCurrentPage('home'); setSelectedCategory('All'); }}>Home</span>
             <span style={{ cursor: 'pointer', color: currentPage === 'shop' ? '#f43f5e' : 'inherit' }} onClick={() => { setCurrentPage('shop'); setSelectedCategory('All'); }}>Shop All</span>
@@ -725,7 +781,6 @@ function App() {
             )}
           </nav>
 
-          {/* Desktop Auth & Actions */}
           <div className="desktop-auth-buttons" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div 
               onClick={() => setCurrentPage('wishlist')} 
@@ -762,21 +817,20 @@ function App() {
                   )}
                   <span style={{ fontSize: '12px', fontWeight: '800', color: '#fbcfe8' }}>{currentUser.name.split(' ')[0]}</span>
                 </div>
-                <button onClick={handleLogout} style={{ background: '#ef4444', color: '#fff', border: 'none', padding: '4px 8px', borderRadius: '8px', cursor: 'pointer', fontSize: '10px', fontWeight: '800' }}>Logout</button>
+                <button onClick={handleLogout} style={{ background: '#ef4444', color: '#fff', border: 'none', padding: '4px 8px', borderRadius: '8px', cursor: 'pointer', fontSize: '10px', fontWeight: '800' }}>Log Out</button>
               </div>
             ) : (
               <div style={{ display: 'flex', gap: '6px' }}>
-                <button onClick={() => setAuthModal('login')} style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', padding: '8px 14px', borderRadius: '10px', cursor: 'pointer', fontWeight: '800', fontSize: '11px' }}>Sign In</button>
+                <button onClick={() => setAuthModal('login')} style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', padding: '8px 14px', borderRadius: '10px', cursor: 'pointer', fontWeight: '800', fontSize: '11px' }}>Log In</button>
                 <button onClick={() => setAuthModal('register')} className="vibrant-btn" style={{ padding: '8px 16px', borderRadius: '10px', fontSize: '11px' }}>Sign Up</button>
               </div>
             )}
           </div>
 
-          {/* Quick Cart Trigger */}
           <div 
             onClick={() => {
               if (!currentUser) {
-                alert("Please Sign In first.");
+                alert("Please Log In first.");
                 setAuthModal('login');
               } else {
                 setIsCartOpen(true);
@@ -791,7 +845,7 @@ function App() {
           </div>
         </header>
 
-        {/* --- MY ACCOUNT PROFILE (ORIGINAL HEADING + EDIT/SAVE/CANCEL CONTROLS) --- */}
+        {/* --- MY ACCOUNT PROFILE VIEW --- */}
         {currentPage === 'profile' && currentUser && (
           <main style={{ maxWidth: '720px', margin: '30px auto', padding: '0 16px 80px 16px' }}>
             <div className="hyper-card" style={{ padding: '34px 26px', background: 'rgba(15, 23, 42, 0.95)' }}>
@@ -802,17 +856,16 @@ function App() {
                   <p style={{ color: '#94a3b8', fontSize: '12px', margin: '4px 0 0 0' }}>Manage your personal details, saved address, and avatar</p>
                 </div>
                 <button onClick={handleLogout} style={{ background: '#ef4444', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '10px', cursor: 'pointer', fontWeight: '800', fontSize: '12px' }}>
-                  🚪 Logout
+                  🚪 Log Out
                 </button>
               </div>
 
               {!isEditingProfile ? (
-                /* Profile Normal View */
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '20px', background: 'rgba(255,255,255,0.05)', padding: '16px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)', marginBottom: '20px' }}>
                     <div style={{ width: '74px', height: '74px', borderRadius: '50%', overflow: 'hidden', border: '2px solid #f43f5e', background: '#0a0f1d', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      {currentUser.avatar ? (
-                        <img src={currentUser.avatar} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      {profileAvatar ? (
+                        <img src={profileAvatar} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                       ) : (
                         <span style={{ fontSize: '30px' }}>👤</span>
                       )}
@@ -845,28 +898,31 @@ function App() {
                   </div>
                 </div>
               ) : (
-                /* Profile Edit Mode with Save & Cancel */
                 <form onSubmit={handleSaveProfile} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
                   
-                  {/* Photo Upload */}
+                  {/* Avatar Upload with Crop & Zoom */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: '20px', background: 'rgba(255,255,255,0.05)', padding: '16px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)' }}>
                     <div style={{ position: 'relative', width: '74px', height: '74px', borderRadius: '50%', overflow: 'hidden', border: '2px solid #f43f5e', background: '#0a0f1d', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       {profileAvatar ? (
-                        <img src={profileAvatar} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        <img src={profileAvatar} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover', transform: `scale(${avatarZoom})` }} />
                       ) : (
                         <span style={{ fontSize: '30px' }}>👤</span>
                       )}
                     </div>
                     <div>
                       <label style={{ display: 'inline-block', background: 'linear-gradient(135deg, #f43f5e, #8b5cf6)', color: '#fff', padding: '8px 16px', borderRadius: '10px', fontSize: '12px', fontWeight: '800', cursor: 'pointer' }}>
-                        📸 Upload Profile Photo
+                        📸 Upload & Crop Photo
                         <input type="file" accept="image/*" onChange={handleAvatarUpload} style={{ display: 'none' }} />
                       </label>
-                      <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '6px' }}>Recommended: Square PNG or JPG (Max 2MB)</div>
+                      {profileAvatar && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
+                          <span style={{ fontSize: '10px', color: '#cbd5e1' }}>Crop Zoom:</span>
+                          <input type="range" min="1" max="2" step="0.1" value={avatarZoom} onChange={(e) => setAvatarZoom(e.target.value)} style={{ width: '100px', accentColor: '#f43f5e' }} />
+                        </div>
+                      )}
                     </div>
                   </div>
 
-                  {/* Name */}
                   <div>
                     <label style={{ fontSize: '12px', fontWeight: '800', color: '#cbd5e1', display: 'block', marginBottom: '6px' }}>Full Name</label>
                     <input 
@@ -878,7 +934,6 @@ function App() {
                     />
                   </div>
 
-                  {/* Email */}
                   <div>
                     <label style={{ fontSize: '12px', fontWeight: '800', color: '#cbd5e1', display: 'block', marginBottom: '6px' }}>Registered Email (Locked)</label>
                     <input 
@@ -889,7 +944,6 @@ function App() {
                     />
                   </div>
 
-                  {/* Phone */}
                   <div>
                     <label style={{ fontSize: '12px', fontWeight: '800', color: '#cbd5e1', display: 'block', marginBottom: '6px' }}>Phone Number</label>
                     <input 
@@ -901,7 +955,6 @@ function App() {
                     />
                   </div>
 
-                  {/* Address */}
                   <div>
                     <label style={{ fontSize: '12px', fontWeight: '800', color: '#cbd5e1', display: 'block', marginBottom: '6px' }}>Saved Delivery Address</label>
                     <textarea 
@@ -933,7 +986,7 @@ function App() {
         {(currentPage === 'home' || currentPage === 'shop') && (
           <main style={{ maxWidth: '1280px', margin: '0 auto', padding: '0 20px 60px 20px' }}>
             
-            {/* Hero Section with Moving Color "ROYAL TUXEDO FIT" */}
+            {/* Hero Section */}
             {currentPage === 'home' && !searchQuery && (
               <section className="hyper-card hero-banner-grid" style={{ margin: '26px 0 50px 0', padding: '40px', display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '30px', alignItems: 'center', background: 'rgba(12, 18, 34, 0.92)' }}>
                 <div>
@@ -970,7 +1023,6 @@ function App() {
                   </div>
                 </div>
 
-                {/* Animated Floating Suit Showcase */}
                 <div className="hero-suit-floating-box">
                   <img 
                     src="https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=800" 
@@ -1356,8 +1408,9 @@ function App() {
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                 <button onClick={() => setAdminTab('analytics')} style={{ padding: '8px 14px', borderRadius: '10px', border: 'none', cursor: 'pointer', fontWeight: '800', background: adminTab === 'analytics' ? 'linear-gradient(135deg, #f43f5e, #8b5cf6)' : 'rgba(255,255,255,0.15)', color: '#fff', fontSize: '12px' }}>📊 Analytics</button>
                 <button onClick={() => setAdminTab('orders')} style={{ padding: '8px 14px', borderRadius: '10px', border: 'none', cursor: 'pointer', fontWeight: '800', background: adminTab === 'orders' ? 'linear-gradient(135deg, #f43f5e, #8b5cf6)' : 'rgba(255,255,255,0.15)', color: '#fff', fontSize: '12px' }}>📦 Orders ({orders.length})</button>
+                <button onClick={() => setAdminTab('categories')} style={{ padding: '8px 14px', borderRadius: '10px', border: 'none', cursor: 'pointer', fontWeight: '800', background: adminTab === 'categories' ? 'linear-gradient(135deg, #f43f5e, #8b5cf6)' : 'rgba(255,255,255,0.15)', color: '#fff', fontSize: '12px' }}>🏷️ Categories ({categoryCards.length})</button>
                 <button onClick={() => setAdminTab('users')} style={{ padding: '8px 14px', borderRadius: '10px', border: 'none', cursor: 'pointer', fontWeight: '800', background: adminTab === 'users' ? 'linear-gradient(135deg, #f43f5e, #8b5cf6)' : 'rgba(255,255,255,0.15)', color: '#fff', fontSize: '12px' }}>👥 User Sessions ({usersList.length})</button>
-                <button onClick={() => setAdminTab('products')} style={{ padding: '8px 14px', borderRadius: '10px', border: 'none', cursor: 'pointer', fontWeight: '800', background: adminTab === 'products' ? 'linear-gradient(135deg, #f43f5e, #8b5cf6)' : 'rgba(255,255,255,0.15)', color: '#fff', fontSize: '12px' }}>👕 Catalog ({products.length})</button>
+                <button onClick={() => setAdminTab('products')} style={{ padding: '8px 14px', borderRadius: '10px', border: 'none', cursor: 'pointer', fontWeight: '800', background: adminTab === 'products' ? 'linear-gradient(135deg, #f43f5e, #8b5cf6)' : 'rgba(255,255,255,0.15)', color: '#fff', fontSize: '12px' }}>👕 Catalog</button>
                 <button onClick={handleAdminLogout} style={{ background: '#ef4444', color: '#fff', border: 'none', padding: '8px 14px', borderRadius: '10px', cursor: 'pointer', fontWeight: '800', fontSize: '12px' }}>Exit Admin</button>
               </div>
             </div>
@@ -1389,7 +1442,35 @@ function App() {
               </div>
             )}
 
-            {/* TAB 2: LIVE USER LOGIN RECORDS */}
+            {/* TAB 2: CATEGORY MANAGEMENT */}
+            {adminTab === 'categories' && (
+              <div style={{ marginTop: '20px' }}>
+                <form onSubmit={handleAddCategory} className="hyper-card" style={{ padding: '24px', marginBottom: '24px' }}>
+                  <h3 className="section-headline-glow" style={{ fontSize: '20px', margin: '0 0 14px 0' }}>Add / Edit Home Categories Matrix</h3>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+                    <input type="text" placeholder="Category Title (e.g. Men Luxury Blazers)" value={newCatTitle} onChange={(e) => setNewCatTitle(e.target.value)} required style={{ padding: '10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.4)', color: '#fff' }} />
+                    <input type="text" placeholder="Filter Category Name (e.g. Coat & Pants)" value={newCatName} onChange={(e) => setNewCatName(e.target.value)} required style={{ padding: '10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.4)', color: '#fff' }} />
+                    <input type="text" placeholder="Item Count (e.g. 15+ Suits)" value={newCatCount} onChange={(e) => setNewCatCount(e.target.value)} required style={{ padding: '10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.4)', color: '#fff' }} />
+                    <input type="text" placeholder="Tag (e.g. PREMIUM FIT)" value={newCatTag} onChange={(e) => setNewCatTag(e.target.value)} style={{ padding: '10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.4)', color: '#fff' }} />
+                    <input type="url" placeholder="HD Image URL" value={newCatImage} onChange={(e) => setNewCatImage(e.target.value)} required style={{ gridColumn: 'span 2', padding: '10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.4)', color: '#fff' }} />
+                  </div>
+                  <button type="submit" className="vibrant-btn" style={{ marginTop: '14px', padding: '10px 20px', borderRadius: '8px' }}>+ Add Category Card</button>
+                </form>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
+                  {categoryCards.map((cat, idx) => (
+                    <div key={idx} className="hyper-card" style={{ padding: '14px' }}>
+                      <img src={cat.image} alt={cat.title} style={{ width: '100%', height: '140px', objectFit: 'cover', borderRadius: '10px', marginBottom: '8px' }} />
+                      <div style={{ fontWeight: 'bold', fontSize: '14px', color: '#fff' }}>{cat.title}</div>
+                      <div style={{ fontSize: '11px', color: '#38bdf8' }}>Filter: {cat.category} ({cat.count})</div>
+                      <button onClick={() => handleDeleteCategory(idx)} style={{ marginTop: '10px', background: '#ef4444', color: '#fff', border: 'none', padding: '4px 10px', borderRadius: '6px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>Delete Category</button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* TAB 3: USER SESSIONS WITH ACTIVE STATUS */}
             {adminTab === 'users' && (
               <div style={{ marginTop: '20px', overflowX: 'auto' }}>
                 <h3 className="section-headline-glow" style={{ fontSize: '20px', margin: '0 0 12px 0' }}>Live Logged-In User Sessions ({usersList.length})</h3>
@@ -1400,14 +1481,14 @@ function App() {
                       <th style={{ padding: '10px', color: '#fff' }}>Email Address</th>
                       <th style={{ padding: '10px', color: '#fff' }}>Phone</th>
                       <th style={{ padding: '10px', color: '#fff' }}>Last Active Time</th>
-                      <th style={{ padding: '10px', color: '#fff' }}>Status</th>
+                      <th style={{ padding: '10px', color: '#fff' }}>Active Status</th>
                       <th style={{ padding: '10px', color: '#fff' }}>Action</th>
                     </tr>
                   </thead>
                   <tbody>
                     {usersList.length === 0 ? (
                       <tr>
-                        <td colSpan="6" style={{ padding: '20px', textAlign: 'center', color: '#cbd5e1' }}>No active user logins recorded yet.</td>
+                        <td colSpan="6" style={{ padding: '20px', textAlign: 'center', color: '#cbd5e1' }}>No user logins recorded yet.</td>
                       </tr>
                     ) : (
                       usersList.map((u, i) => (
@@ -1424,8 +1505,8 @@ function App() {
                           <td style={{ padding: '10px', color: '#cbd5e1' }}>{u.phone || 'N/A'}</td>
                           <td style={{ padding: '10px', color: '#facc15', fontSize: '12px' }}>{u.lastLogin || 'Just Now'}</td>
                           <td style={{ padding: '10px' }}>
-                            <span style={{ background: 'rgba(34, 197, 94, 0.2)', color: '#4ade80', padding: '4px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: 'bold' }}>
-                              ● {u.status || 'Active'}
+                            <span style={{ background: u.status.includes('Offline') ? 'rgba(239, 68, 68, 0.2)' : 'rgba(34, 197, 94, 0.2)', color: u.status.includes('Offline') ? '#ef4444' : '#4ade80', padding: '4px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: 'bold' }}>
+                              {u.status}
                             </span>
                           </td>
                           <td style={{ padding: '10px' }}>
@@ -1439,7 +1520,7 @@ function App() {
               </div>
             )}
 
-            {/* TAB 3: ORDERS */}
+            {/* TAB 4: ORDERS */}
             {adminTab === 'orders' && (
               <div style={{ marginTop: '20px', overflowX: 'auto' }}>
                 <h3 className="section-headline-glow" style={{ fontSize: '20px', margin: '0 0 12px 0' }}>Customer Orders ({orders.length})</h3>
@@ -1468,7 +1549,7 @@ function App() {
                           </select>
                         </td>
                         <td style={{ padding: '10px' }}>
-                          <button onClick={() => handleDeleteOrder(o._id)} style={{ background: '#ef4444', color: '#fff', border: 'none', padding: '4px 10px', borderRadius: '6px', cursor: 'pointer', fontSize: '11px' }}>Delete</button>
+                          <button onClick={() => handleDeleteOrder(o._id)} style={{ background: '#ef4444', color: '#fff', border: 'none', padding: '4px 10px', borderRadius: '6px', cursor: 'pointer' }}>Delete</button>
                         </td>
                       </tr>
                     ))}
@@ -1477,7 +1558,7 @@ function App() {
               </div>
             )}
 
-            {/* TAB 4: PRODUCTS */}
+            {/* TAB 5: PRODUCTS */}
             {adminTab === 'products' && (
               <div style={{ marginTop: '20px' }}>
                 <form onSubmit={handleAddProduct} className="hyper-card" style={{ padding: '20px', marginBottom: '20px' }}>
@@ -1524,7 +1605,7 @@ function App() {
         )}
       </div>
 
-      {/* Full 4-Column Footer with Royal Brand Logo Image */}
+      {/* Full 4-Column Footer */}
       <footer style={{ background: 'rgba(8, 12, 22, 0.98)', color: '#cbd5e1', padding: '50px 40px 30px 40px', borderTop: '1px solid rgba(255,255,255,0.15)', position: 'relative', zIndex: 1 }}>
         <div style={{ maxWidth: '1280px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '35px', paddingBottom: '35px', borderBottom: '1px solid rgba(255,255,255,0.15)' }}>
           
@@ -1632,7 +1713,7 @@ function App() {
           }}
         >
           <span className="icon">👤</span>
-          <span>{currentUser ? 'Profile' : 'Sign In'}</span>
+          <span>{currentUser ? 'Profile' : 'Log In'}</span>
         </button>
       </nav>
 
@@ -1811,7 +1892,7 @@ function App() {
         </div>
       )}
 
-      {/* Payment Gateway Modal */}
+      {/* Payment Gateway Modal (Instant Automated Confirmation) */}
       {showPaymentGateway && orderSummary && (
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(12px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1300, padding: '16px' }}>
           <div className="hyper-card" style={{ width: '100%', maxWidth: '600px', borderRadius: '22px', overflow: 'hidden', display: 'flex', flexDirection: 'column', background: '#0f172a' }}>
@@ -1871,31 +1952,31 @@ function App() {
                     )}
 
                     <button 
-                      onClick={() => finalizeOrder('UPI Verified')} 
+                      onClick={() => handleInstantPaymentAndConfirm('UPI Instant Pay')} 
                       disabled={isProcessingPay}
                       className="vibrant-btn"
                       style={{ width: '100%', marginTop: '10px', padding: '12px', borderRadius: '10px', fontSize: '13px' }}
                     >
-                      {isProcessingPay ? 'Verifying...' : `Pay ₹${orderSummary.totalAmount} ✓`}
+                      {isProcessingPay ? 'Processing Payment...' : `Pay ₹${orderSummary.totalAmount} & Confirm ⚡`}
                     </button>
                   </div>
                 )}
 
                 {paymentTab === 'card' && (
-                  <form onSubmit={(e) => { e.preventDefault(); finalizeOrder('Card Verified'); }} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <form onSubmit={(e) => { e.preventDefault(); handleInstantPaymentAndConfirm('Card Instant Pay'); }} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     <input type="text" placeholder="Card Number (16 Digits)" maxLength="16" value={cardNumber} onChange={(e) => setCardNumber(e.target.value.replace(/\D/g, ''))} required style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.4)', color: '#fff' }} />
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                       <input type="text" placeholder="MM/YY" maxLength="5" value={cardExpiry} onChange={(e) => setCardExpiry(e.target.value)} required style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.4)', color: '#fff' }} />
                       <input type="password" placeholder="CVV" maxLength="3" value={cardCvv} onChange={(e) => setCardCvv(e.target.value.replace(/\D/g, ''))} required style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.4)', color: '#fff' }} />
                     </div>
                     <button type="submit" disabled={isProcessingPay} className="vibrant-btn" style={{ width: '100%', marginTop: '10px', padding: '12px', borderRadius: '10px' }}>
-                      {isProcessingPay ? 'Processing...' : `Pay ₹${orderSummary.totalAmount}`}
+                      {isProcessingPay ? 'Processing...' : `Pay ₹${orderSummary.totalAmount} & Confirm ⚡`}
                     </button>
                   </form>
                 )}
 
                 {paymentTab === 'netbanking' && (
-                  <form onSubmit={(e) => { e.preventDefault(); finalizeOrder(`NetBanking (${selectedBank})`); }} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <form onSubmit={(e) => { e.preventDefault(); handleInstantPaymentAndConfirm(`NetBanking (${selectedBank})`); }} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     <select value={selectedBank} onChange={(e) => setSelectedBank(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #f43f5e', background: 'rgba(0,0,0,0.4)', color: '#fff', fontWeight: '700' }}>
                       <option value="State Bank of India (SBI)">State Bank of India (SBI)</option>
                       <option value="UCO Bank">UCO Bank</option>
@@ -1903,7 +1984,7 @@ function App() {
                       <option value="ICICI Bank">ICICI Bank</option>
                     </select>
                     <button type="submit" disabled={isProcessingPay} className="vibrant-btn" style={{ width: '100%', marginTop: '14px', padding: '12px', borderRadius: '10px' }}>
-                      {isProcessingPay ? `Connecting...` : `Pay ₹${orderSummary.totalAmount}`}
+                      {isProcessingPay ? `Connecting Bank...` : `Pay ₹${orderSummary.totalAmount} & Confirm ⚡`}
                     </button>
                   </form>
                 )}
